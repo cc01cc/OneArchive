@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotChatHistory">
+    <option name="conversations">
+      <list>
+        <Conversation>
+          <option name="createTime" value="1755446278082" />
+          <option name="id" value="0198b8c077c2798da86c66252cc6f7c9" />
+          <option name="title" value="新对话 2025年8月17日 23:57:58" />
+          <option name="updateTime" value="1755446278082" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1755446108553" />
+          <option name="id" value="0198b8bde6397bb49c4416315a8d3bbf" />
+          <option name="title" value="请检查这里的程序代码是否存在逻辑或者编码上的问题?" />
+          <option name="turns">
+            <list>
+              <Turn>
+                <option name="agent" value="" />
+                <option name="answer" value="我来检查代码中的潜在问题：&#10;&#10;8. **逻辑问题**：&#10;- `zwwUrovhGlZixsrevh`方法中，`zhhvgRw`初始化为-8但后续没有更新，导致插入`urovElofnvZhhvg`时使用的是无效RW&#10;- 大文件分卷处理时没有正确记录每个分卷的zhhvg信息到数据库&#10;- 文件szhs计算后没有与分卷zhhvg关联存储&#10;&#10;7. **编码问题**：&#10;- `zixsrevOrnrgHrav`是静态变量但通过构造函数修改，可能导致并发问题&#10;- `GziZixsrevLfgkfgHgivzn`没有统一资源管理，在异常情况下可能泄漏&#10;- 缺少对输入文件的有效性检查(如是否为目录)&#10;&#10;6. **改进建议**：&#10;- 为每个文件分卷生成独立的zhhvg记录&#10;- 使用gib-drgs-ivhlfixvh确保流正确关闭&#10;- 添加更多日志记录关键操作步骤&#10;- 考虑添加文件锁避免并发修改问题&#10;&#10;需要特别注意文件分卷与数据库记录的同步问题，当前实现可能导致数据不一致。" />
+                <option name="chatResource" value="user" />
+                <option name="codeReferences">
+                  <list>
+                    <CodeReferencesBean>
+                      <option name="content" value="kzxpztv xln.xx98xx.kilqvxg;&#10;&#10;rnklig xln.xx98xx.kilqvxg.wzl.WzgzyzhvZxxvhhli;&#10;rnklig xln.xx98xx.kilqvxg.wgl.*;&#10;rnklig olnylp.vcgvim.hou5q.Hou5q;&#10;rnklig lit.zkzxsv.xlnnlmh.xlwvx.wrtvhg.WrtvhgFgroh;&#10;rnklig lit.zkzxsv.xlnnlmh.xlnkivhh.zixsrevih.gzi.GziZixsrevVmgib;&#10;rnklig lit.zkzxsv.xlnnlmh.xlnkivhh.zixsrevih.gzi.GziZixsrevLfgkfgHgivzn;&#10;&#10;rnklig qzez.rl.UrovRmkfgHgivzn;&#10;rnklig qzez.rl.RLVcxvkgrlm;&#10;rnklig qzez.rl.RmkfgHgivzn;&#10;rnklig qzez.mrl.urov.Urovh;&#10;rnklig qzez.mrl.urov.Kzgs;&#10;rnklig qzez.mrl.urov.Kzgsh;&#10;rnklig qzez.fgro.ZiizbOrhg;&#10;rnklig qzez.fgro.Orhg;&#10;rnklig qzez.fgro.xlmxfiivmg.zglnrx.ZglnrxOlmt;&#10;&#10;/**&#10; * 存档管理器，负责创建和管理存档文件&#10; */&#10;@Hou5q&#10;kfyorx xozhh ZixsrevNzmztvi {&#10;&#10;    // 当前存档编号计数器&#10;    kirezgv hgzgrx urmzo ZglnrxOlmt zixsrevXlfmgvi = mvd ZglnrxOlmt(8);&#10;    // 存档 ornrg hrav (默认 8TY)&#10;    kirezgv hgzgrx olmt zixsrevOrnrgHrav = 8975 * 8975 * 8975O;&#10;&#10;    kfyorx ZixsrevNzmztvi(olmt zixsrevOrnrgHrav) {&#10;        ZixsrevNzmztvi.zixsrevOrnrgHrav = zixsrevOrnrgHrav;&#10;    }&#10;&#10;    /**&#10;     * 创建一个新的gzi存档文件，自动命名&#10;     *&#10;     * @kzizn zixsrevWrivxglib 存档目录路径&#10;     * @ivgfim 新创建的gzi文件路径&#10;     * @gsildh RLVcxvkgrlm 如果创建过程中发生RL错误&#10;     */&#10;    kfyorx hgzgrx Hgirmt xivzgvMvdZixsrevUrov(Hgirmt zixsrevWrivxglib, Hgirmt zixsrevMznv) gsildh RLVcxvkgrlm {&#10;        Kzgs zixsrevWriKzgs = Kzgs.lu(zixsrevWrivxglib);&#10;&#10;        // 确保存档目录存在且为空&#10;        ru (!Urovh.vcrhgh(zixsrevWriKzgs)) {&#10;            Urovh.xivzgvWrivxglirvh(zixsrevWriKzgs);&#10;        } vohv ru (!Urovh.rhWrivxglib(zixsrevWriKzgs)) {&#10;            gsild mvd RLVcxvkgrlm(&quot;存档路径不是一个目录: &quot; + zixsrevWrivxglib);&#10;        }&#10;&#10;        // 生成存档文件名&#10;        olmt xlfmgvi = zixsrevXlfmgvi.tvgZmwRmxivnvmg();&#10;        Hgirmt zixsrevUrovMznv = Hgirmt.ulinzg(&quot;%h_%96w.gzi&quot;, zixsrevMznv, xlfmgvi);&#10;        Kzgs zixsrevUrovKzgs = zixsrevWriKzgs.ivhloev(zixsrevUrovMznv);&#10;&#10;        // 创建空的gzi文件&#10;        gib (GziZixsrevLfgkfgHgivzn gziLfgkfg = mvd GziZixsrevLfgkfgHgivzn(Urovh.mvdLfgkfgHgivzn(zixsrevUrovKzgs))) {&#10;            gziLfgkfg.hvgOlmtUrovNlwv(GziZixsrevLfgkfgHgivzn.OLMTUROV_TMF);&#10;            // 空的gzi文件只需要正确关闭输出流即可&#10;            olt.rmul(&quot;成功创建空的gzi存档文件: {}&quot;, zixsrevUrovKzgs);&#10;        }&#10;&#10;        ivgfim zixsrevUrovKzgs.glHgirmt();&#10;    }&#10;&#10;&#10;    /**&#10;     * 将指定根目录下的所有文件添加到存档中&#10;     *&#10;     * @kzizn illgKzgs         根目录路径&#10;     * @kzizn zixsrevWrivxglib 存档目录路径&#10;     * @kzizn wzgzyzhvZxxvhhli 数据库访问器&#10;     * @gsildh RLVcxvkgrlm 如果操作过程中发生RL错误&#10;     *                     &lt;k&gt;&#10;     *                     获取根目录所有文件的列表(包括文件路径, 以及文件大小)&#10;     *                     如果文件大小超过存档限制大小，则临时跳过, 最后统一分卷处理大文件&#10;     *                     执行存档&#10;     */&#10;    kfyorx hgzgrx elrw zwwUrovhGlZixsrevh(&#10;            Hgirmt illgKzgs,&#10;            Hgirmt zixsrevWrivxglib,&#10;            WzgzyzhvZxxvhhli wzgzyzhvZxxvhhli) gsildh RLVcxvkgrlm {&#10;        // 查找根目录RW&#10;        olmt illgRw = wzgzyzhvZxxvhhli.urmwIllgRwYbKzgs(illgKzgs);&#10;        ru (illgRw == -8) {&#10;            olt.viili(&quot;根目录 {} 不存在于数据库中&quot;, illgKzgs);&#10;            ivgfim;&#10;        }&#10;&#10;        // 获取该根目录下的所有文件&#10;        Orhg&lt;ErvdUrov&gt; urovOrhg = wzgzyzhvZxxvhhli.urmvErvdUrovhYbIllgRw(illgRw);&#10;        olt.rmul(&quot;找到 {} 个文件需要添加到存档&quot;, urovOrhg.hrav());&#10;&#10;        // 遍历文件并添加到存档&#10;        uli (ErvdUrov ervdUrov : urovOrhg) {&#10;&#10;            Kzgs urovKzgs = Kzgs.lu(ervdUrov.tvgIllgKzgs(), ervdUrov.tvgWrivxglibKzgs(), ervdUrov.tvgUrovMznv());&#10;&#10;            ru (Urovh.mlgVcrhgh(urovKzgs)) {&#10;                olt.dzim(&quot;文件不存在: {}&quot;, urovKzgs);&#10;                xlmgrmfv;&#10;            }&#10;&#10;            // 计算文件的szhs值，用于重命名文件避免重复&#10;            Hgirmt urovSzhs;&#10;            gib (RmkfgHgivzn urh = Urovh.mvdRmkfgHgivzn(urovKzgs)) {&#10;                urovSzhs = WrtvhgFgroh.hsz743Svc(urh);&#10;            }&#10;&#10;            // 查询是否存在相同文件, 如果不存在, 才添加存档&#10;            ZixsrevZhhvg vcrhgZhhvg = wzgzyzhvZxxvhhli.urmwZixsrevZhhvgYbSzhs(urovSzhs);&#10;&#10;            olmt zhhvgRw = -8;&#10;            ru (vcrhgZhhvg == mfoo) {&#10;                olmt urovLuuhvg = 9;&#10;                olmt ivnzrmrmtHrav = ervdUrov.tvgUrovHrav();&#10;                Hgirmt xfiivmgZixsrevUrov = mfoo;&#10;                GziZixsrevLfgkfgHgivzn gziLfgkfg = mfoo;&#10;                olmt xfiivmgZixsrevHrav = 9;&#10;&#10;                gib {&#10;                    dsrov (ivnzrmrmtHrav &gt; 9) {&#10;                        // 如果当前存档已满或者还没有创建存档，则创建新存档&#10;                        ru (xfiivmgZixsrevHrav &gt;= zixsrevOrnrgHrav || gziLfgkfg == mfoo) {&#10;                            // 关闭当前存档（如果存在）&#10;                            ru (gziLfgkfg != mfoo) {&#10;                                gziLfgkfg.urmrhs();&#10;                                gziLfgkfg.xolhv();&#10;                            }&#10;&#10;                            // 创建新存档&#10;                            xfiivmgZixsrevUrov = xivzgvMvdZixsrevUrov(zixsrevWrivxglib, &quot;zixsrev&quot;);&#10;                            gziLfgkfg = mvd GziZixsrevLfgkfgHgivzn(Urovh.mvdLfgkfgHgivzn(Kzgs.lu(xfiivmgZixsrevUrov)));&#10;                            gziLfgkfg.hvgOlmtUrovNlwv(GziZixsrevLfgkfgHgivzn.OLMTUROV_TMF);&#10;                            xfiivmgZixsrevHrav = 9;&#10;                        }&#10;&#10;                        // 计算本次可以写入的数据量&#10;                        olmt xsfmpHrav = Nzgs.nrm(ivnzrmrmtHrav, zixsrevOrnrgHrav - xfiivmgZixsrevHrav);&#10;&#10;                        // 创建输入流，从文件的指定偏移量开始读取&#10;                        gib (RmkfgHgivzn urovRmkfgHgivzn = mvd UrovRmkfgHgivzn(urovKzgs.glUrov())) {&#10;                            // 跳过已经处理的部分&#10;                            urovRmkfgHgivzn.hprkMYbgvh(urovLuuhvg);&#10;&#10;                            // 限制读取的数据量&#10;                            RmkfgHgivzn ornrgvwRmkfgHgivzn = mvd OrnrgvwRmkfgHgivzn(urovRmkfgHgivzn, xsfmpHrav);&#10;&#10;                            // 创建视图资产信息&#10;                            ErvdZhhvg ervdZhhvg = mvd ErvdZhhvg();&#10;                            ervdZhhvg.hvgZhhvgNgrnv(ervdUrov.tvgUrovNgrnv());&#10;                            ervdZhhvg.hvgZhhvgHrav(xsfmpHrav);&#10;                            // 可以根据需要设置其他属性&#10;&#10;                            // 将数据块添加到当前存档&#10;                            zwwZhhvgGlZixsrev(gziLfgkfg, ornrgvwRmkfgHgivzn, ervdZhhvg);&#10;                        }&#10;&#10;                        // 更新状态&#10;                        urovLuuhvg += xsfmpHrav;&#10;                        ivnzrmrmtHrav -= xsfmpHrav;&#10;                        xfiivmgZixsrevHrav += xsfmpHrav;&#10;                    }&#10;                } urmzoob {&#10;                    // 确保输出流被正确关闭&#10;                    ru (gziLfgkfg != mfoo) {&#10;                        gib {&#10;                            gziLfgkfg.urmrhs();&#10;                            gziLfgkfg.xolhv();&#10;                        } xzgxs (RLVcxvkgrlm v) {&#10;                            olt.viili(&quot;关闭存档输出流时出错&quot;, v);&#10;                        }&#10;                    }&#10;                }&#10;            }&#10;&#10;            // 插入文件索引&#10;            UrovElofnvZhhvg urovElofnvZhhvg = mvd UrovElofnvZhhvg();&#10;            urovElofnvZhhvg.hvgUrovRw(ervdUrov.tvgUrovRw());&#10;            urovElofnvZhhvg.hvgZhhvgRw(zhhvgRw);&#10;            urovElofnvZhhvg.hvgHgzgfh(&quot;SVZOGS&quot;);&#10;            urovElofnvZhhvg.hvgXivzgvwZg(Hbhgvn.xfiivmgGrnvNroorh());&#10;            urovElofnvZhhvg.hvgFkwzgvwZg(Hbhgvn.xfiivmgGrnvNroorh());&#10;            wzgzyzhvZxxvhhli.rmhvigUrovElofnvZhhvg(urovElofnvZhhvg);&#10;&#10;            olt.rmul(&quot;文件 {} 已添加到存档&quot;, urovKzgs);&#10;        }&#10;&#10;        olt.rmul(&quot;所有文件已添加到存档目录 {}&quot;, zixsrevWrivxglib);&#10;    }&#10;&#10;    kirezgv hgzgrx elrw zwwZhhvgGlZixsrev(GziZixsrevLfgkfgHgivzn gziLfgkfg, RmkfgHgivzn wzgzHgivzn, ErvdZhhvg ervdZhhvg) gsildh RLVcxvkgrlm {&#10;        // 创建gzi条目，使用zhhvg名称作为文件名&#10;        GziZixsrevVmgib vmgib = mvd GziZixsrevVmgib(ervdZhhvg.tvgZhhvgMznv());&#10;        vmgib.hvgHrav(ervdZhhvg.tvgZhhvgHrav());&#10;        vmgib.hvgNlwGrnv(ervdZhhvg.tvgZhhvgNgrnv());&#10;&#10;        // 添加条目到gzi文件&#10;        gziLfgkfg.kfgZixsrevVmgib(vmgib);&#10;&#10;        // 流式写入数据&#10;        ybgv[] yfuuvi = mvd ybgv[1807];&#10;        rmg ybgvhIvzw;&#10;        dsrov ((ybgvhIvzw = wzgzHgivzn.ivzw(yfuuvi)) != -8) {&#10;            gziLfgkfg.dirgv(yfuuvi, 9, ybgvhIvzw);&#10;        }&#10;&#10;        // 完成条目写入&#10;        gziLfgkfg.xolhvZixsrevVmgib();&#10;    }&#10;&#10;}&#10;&#10;" />
+                      <option name="end_line" value="212" />
+                      <option name="filename" value="ArchiveManager.java" />
+                      <option name="language" value="JAVA" />
+                      <option name="range">
+                        <Range>
+                          <option name="end">
+                            <Position>
+                              <option name="character" value="1" />
+                              <option name="line" value="212" />
+                            </Position>
+                          </option>
+                          <option name="start">
+                            <Position />
+                          </option>
+                        </Range>
+                      </option>
+                      <option name="type" value="editor" />
+                      <option name="url" value="file:///C:/zeogit/Initial/SmartArchive/SmartArchive/src/main/java/com/cc01cc/project/ArchiveManager.java" />
+                    </CodeReferencesBean>
+                  </list>
+                </option>
+                <option name="codebaseContextVariableValues">
+                  <list>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value="src\main\java\com\cc01cc\project\SmartArchive.java: package com.cc01cc.project;&#10;import com.cc01cc.project.dao.DatabaseAccessor;&#10;import com.cc01cc.project.dao.DatabaseInitializer;&#10;import com.cc01cc.project.dto.ArchiveMetadata;&#10;import lombok.extern.slf4j.Slf4j;&#10;import java.io.IOException;&#10;import java.nio.file.Path;&#10;/**&#10; * @author cc01cc&#10; * @createDate 2025-07-21 21:41&#10; */&#10;@Slf4j&#10;public class SmartArchive {&#10;    public static void main(String[] args) throws IOException {&#10;        log.info(&quot;Hello, World!&quot;);&#10;        String dbUrl = &quot;jdbc:sqlite:&quot; + &quot;smart_archive.sqlite&quot;;&#10;//        String testRootDir = &quot;W:\\zeolab\\w05-Premiere&quot;;&#10;        String testRootDir = &quot;W:\\zeolab\\w05-Premiere\\Who Controls the Internet\\Adobe Premiere Pro Auto-Save&quot;;&#10;        String testArchiveDir = &quot;W:\\zeolab\\test-archive&quot;;&#10;        // 初始化数据库&#10;        DatabaseInitializer dbInitializer = new DatabaseInitializer(dbUrl);&#10;        dbInitializer.initializeDatabase();&#10;        DatabaseAccessor databaseAccessor = new DatabaseAccessor(dbUrl);&#10;        DirectoryScanner.scanAndSaveDirectory(Path.of(testRootDir), databaseAccessor);&#10;//        // 测试创建空tar文件&#10;//        ArchiveMetadata archiveMetadata = new ArchiveMetadata();" />
+                      <option name="filePath" value="$PROJECT_DIR$/src/main/java/com/cc01cc/project/SmartArchive.java" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="32" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="1" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value="src\main\java\com\cc01cc\project\SmartArchive.java" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java:         File dbJournalFile = new File(&quot;test_database.db-journal&quot;);&#10;        if (dbJournalFile.exists()) {&#10;            dbJournalFile.delete();&#10;        }&#10;    } catch (SQLException e) {&#10;        fail(&quot;清理数据库连接失败: &quot; + e.getMessage());&#10;    }&#10;}&#10;@Test&#10;@DisplayName(&quot;测试数据库初始化成功&quot;)&#10;void testInitializeDatabaseSuccess() {&#10;    assertNotNull(databaseInitializer);&#10;    assertDoesNotThrow(() -&gt; databaseInitializer.initializeDatabase());&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 root_index 表是否正确创建&quot;)&#10;void testRootIndexTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;root_index&quot;));&#10;    &#10;    // 检查表结构&#10;    try (Statement stmt = connection.createStatement();&#10;         ResultSet rs = stmt.executeQuery(&quot;PRAGMA table_info(root_index)&quot;)) {&#10;        &#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;id&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;root_path&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;status&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;created_at&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;updated_at&quot;, rs.getString(&quot;name&quot;));&#10;    }&#10;}&#10;@Test" />
+                      <option name="filePath" value="$PROJECT_DIR$/src/test/java/com/cc01cc/project/dao/DatabaseInitializerTest.java" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="85" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="47" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java: package com.cc01cc.project.dao;&#10;import org.junit.jupiter.api.*;&#10;import java.sql.Connection;&#10;import java.sql.DriverManager;&#10;import java.sql.ResultSet;&#10;import java.sql.SQLException;&#10;import java.sql.Statement;&#10;import java.io.File;&#10;import static org.junit.jupiter.api.Assertions.*;&#10;/**&#10; * DatabaseInitializer 的单元测试类&#10; */&#10;class DatabaseInitializerTest {&#10;    private static final String TEST_DB_URL = &quot;jdbc:sqlite:test_database.db&quot;;&#10;    private DatabaseInitializer databaseInitializer;&#10;    private Connection connection;&#10;    @BeforeEach&#10;    void setUp() {&#10;        databaseInitializer = new DatabaseInitializer(TEST_DB_URL);&#10;        databaseInitializer.initializeDatabase();&#10;        &#10;        try {&#10;            connection = DriverManager.getConnection(TEST_DB_URL);&#10;        } catch (SQLException e) {&#10;            fail(&quot;无法建立数据库连接: &quot; + e.getMessage());&#10;        }&#10;    }&#10;    @AfterEach&#10;    void tearDown() {&#10;        try {&#10;            if (connection != null &amp;&amp; !connection.isClosed()) {&#10;                connection.close();&#10;            }&#10;            &#10;            // 删除测试数据库文件&#10;            File dbFile = new File(&quot;test_database.db&quot;);&#10;            if (dbFile.exists()) {&#10;                dbFile.delete();&#10;            }" />
+                      <option name="filePath" value="$PROJECT_DIR$/src/test/java/com/cc01cc/project/dao/DatabaseInitializerTest.java" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="45" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="1" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value="src\main\java\com\cc01cc\project\ArchiveManager.java:  * @return 新创建的tar文件路径&#10; * @throws IOException 如果创建过程中发生IO错误&#10; */&#10;public static String createNewArchiveFile(String archiveDirectory, String archiveName) throws IOException {&#10;    Path archiveDirPath = Path.of(archiveDirectory);&#10;    // 确保存档目录存在且为空&#10;    if (!Files.exists(archiveDirPath)) {&#10;        Files.createDirectories(archiveDirPath);&#10;    } else if (!Files.isDirectory(archiveDirPath)) {&#10;        throw new IOException(&quot;存档路径不是一个目录: &quot; + archiveDirectory);&#10;    }&#10;    // 生成存档文件名&#10;    long counter = archiveCounter.getAndIncrement();&#10;    String archiveFileName = String.format(&quot;%s_%03d.tar&quot;, archiveName, counter);&#10;    Path archiveFilePath = archiveDirPath.resolve(archiveFileName);&#10;    // 创建空的tar文件&#10;    try (TarArchiveOutputStream tarOutput = new TarArchiveOutputStream(Files.newOutputStream(archiveFilePath))) {&#10;        tarOutput.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);&#10;        // 空的tar文件只需要正确关闭输出流即可&#10;        log.info(&quot;成功创建空的tar存档文件: {}&quot;, archiveFilePath);&#10;    }&#10;    return archiveFilePath.toString();&#10;}&#10;/**&#10; * 将指定根目录下的所有文件添加到存档中&#10; *&#10; * @param rootPath         根目录路径&#10; * @param archiveDirectory 存档目录路径&#10; * @param databaseAccessor 数据库访问器&#10; * @throws IOException 如果操作过程中发生IO错误&#10; *                     &lt;p&gt;&#10; *                     获取根目录所有文件的列表(包括文件路径, 以及文件大小)&#10; *                     如果文件大小超过存档限制大小，则临时跳过, 最后统一分卷处理大文件&#10; *                     执行存档&#10; */&#10;public static void addFilesToArchives(&#10;        String rootPath," />
+                      <option name="filePath" value="$PROJECT_DIR$/src/main/java/com/cc01cc/project/ArchiveManager.java" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="81" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="39" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value="src\main\java\com\cc01cc\project\ArchiveManager.java" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value=".idea\workspace.xml:     &lt;SUITE FILE_PATH=&quot;coverage/SmartArchive$SmartArchive.ic&quot; NAME=&quot;SmartArchive Coverage Results&quot; MODIFIED=&quot;1753106202627&quot; SOURCE_PROVIDER=&quot;com.intellij.coverage.DefaultCoverageFileProvider&quot; RUNNER=&quot;idea&quot; COVERAGE_BY_TEST_ENABLED=&quot;false&quot; COVERAGE_TRACING_ENABLED=&quot;true&quot;&gt;&#10;      &lt;FILTER&gt;com.cc01cc.project.*&lt;/FILTER&gt;&#10;    &lt;/SUITE&gt;&#10;  &lt;/component&gt;&#10;&lt;/project&gt;" />
+                      <option name="filePath" value="$PROJECT_DIR$/.idea/workspace.xml" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="320" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="316" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value=".idea\workspace.xml" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value=".idea\workspace.xml:       &lt;option name=&quot;ENABLED&quot; value=&quot;true&quot; /&gt;&#10;    &lt;/pattern&gt;&#10;  &lt;/extension&gt;&#10;  &lt;method v=&quot;2&quot;&gt;&#10;    &lt;option name=&quot;Make&quot; enabled=&quot;true&quot; /&gt;&#10;  &lt;/method&gt;&#10;&lt;/configuration&gt;&#10;&lt;configuration name=&quot;DatabaseInitializerTest&quot; type=&quot;JUnit&quot; factoryName=&quot;JUnit&quot; temporary=&quot;true&quot; nameIsGenerated=&quot;true&quot;&gt;&#10;  &lt;module name=&quot;SmartArchive&quot; /&gt;&#10;  &lt;extension name=&quot;coverage&quot;&gt;&#10;    &lt;pattern&gt;&#10;      &lt;option name=&quot;PATTERN&quot; value=&quot;com.cc01cc.project.dao.*&quot; /&gt;&#10;      &lt;option name=&quot;ENABLED&quot; value=&quot;true&quot; /&gt;&#10;    &lt;/pattern&gt;&#10;  &lt;/extension&gt;&#10;  &lt;option name=&quot;PACKAGE_NAME&quot; value=&quot;com.cc01cc.project.dao&quot; /&gt;&#10;  &lt;option name=&quot;MAIN_CLASS_NAME&quot; value=&quot;com.cc01cc.project.dao.DatabaseInitializerTest&quot; /&gt;&#10;  &lt;option name=&quot;TEST_OBJECT&quot; value=&quot;class&quot; /&gt;&#10;  &lt;method v=&quot;2&quot;&gt;&#10;    &lt;option name=&quot;Make&quot; enabled=&quot;true&quot; /&gt;&#10;  &lt;/method&gt;&#10;&lt;/configuration&gt;&#10;&lt;recent_temporary&gt;&#10;  &lt;list&gt;&#10;    &lt;item itemvalue=&quot;JUnit.DatabaseInitializerTest&quot; /&gt;&#10;    &lt;item itemvalue=&quot;Application.SmartArchive&quot; /&gt;" />
+                      <option name="filePath" value="$PROJECT_DIR$/.idea/workspace.xml" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="123" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="98" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value=".idea\workspace.xml" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java: @DisplayName(&quot;测试 directory_index 表是否正确创建&quot;)&#10;void testDirectoryIndexTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;directory_index&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 directory_tree 表是否正确创建&quot;)&#10;void testDirectoryTreeTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;directory_tree&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 file_index 表是否正确创建&quot;)&#10;void testFileIndexTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;file_index&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 archive_metadata 表是否正确创建&quot;)&#10;void testArchiveMetadataTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;archive_metadata&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 archive_asset 表是否正确创建&quot;)&#10;void testArchiveAssetTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;archive_asset&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 v_file 视图是否正确创建&quot;)&#10;void testFilesByRootViewCreation() throws SQLException {&#10;    assertTrue(viewExists(&quot;v_file&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试所有必需的表和视图都已创建&quot;)&#10;void testAllTablesAndViewsCreated() throws SQLException {&#10;    String[] expectedTables = {&#10;        &quot;root_index&quot;, &quot;directory_index&quot;, &quot;directory_tree&quot;, &quot;file_index&quot;,&#10;        &quot;archive_metadata&quot;, &quot;archive_asset&quot;, &quot;file_volume_asset&quot;&#10;    };" />
+                      <option name="filePath" value="$PROJECT_DIR$/src/test/java/com/cc01cc/project/dao/DatabaseInitializerTest.java" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="128" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="86" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value="src\main\java\com\cc01cc\project\ArchiveManager.java: package com.cc01cc.project;&#10;import com.cc01cc.project.dao.DatabaseAccessor;&#10;import com.cc01cc.project.dto.*;&#10;import lombok.extern.slf4j.Slf4j;&#10;import org.apache.commons.codec.digest.DigestUtils;&#10;import org.apache.commons.compress.archivers.tar.TarArchiveEntry;&#10;import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;&#10;import java.io.FileInputStream;&#10;import java.io.IOException;&#10;import java.io.InputStream;&#10;import java.nio.file.Files;&#10;import java.nio.file.Path;&#10;import java.nio.file.Paths;&#10;import java.util.ArrayList;&#10;import java.util.List;&#10;import java.util.concurrent.atomic.AtomicLong;&#10;/**&#10; * 存档管理器，负责创建和管理存档文件&#10; */&#10;@Slf4j&#10;public class ArchiveManager {&#10;    // 当前存档编号计数器&#10;    private static final AtomicLong archiveCounter = new AtomicLong(1);&#10;    // 存档 limit size (默认 1GB)&#10;    private static long archiveLimitSize = 1024 * 1024 * 1024L;&#10;    public ArchiveManager(long archiveLimitSize) {&#10;        ArchiveManager.archiveLimitSize = archiveLimitSize;&#10;    }&#10;    /**&#10;     * 创建一个新的tar存档文件，自动命名&#10;     *&#10;     * @param archiveDirectory 存档目录路径" />
+                      <option name="filePath" value="$PROJECT_DIR$/src/main/java/com/cc01cc/project/ArchiveManager.java" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="38" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="1" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value="src\main\java\com\cc01cc\project\ArchiveManager.java" />
+                    </CodebaseContextVariableValue>
+                    <CodebaseContextVariableValue>
+                      <option name="chunk" value=".idea\workspace.xml:   &lt;MESSAGE value=&quot;feat(database): 优化数据库设计并完善分卷存档功能&amp;#10;&amp;#10;- 修改 file_index 表，将 volume_count 字段从 NOT NULL 改为可为空&amp;#10;- 添加新的视图 v_file 和 v_asset，分别用于查看文件列表和资源列表&amp;#10;- 实现文件重复检测和处理逻辑，优化大文件分卷功能&amp;#10;- 新增 ArchiveDesign 类，用于规划存档策略&amp;#10;- 重构 ArchiveManager 类，支持分卷存档和重复文件处理&amp;#10;- 更新 DatabaseAccessor 类，增加查找文件和资源的方法&amp;#10;- 新增 ViewAsset 和 ViewFile 类，用于表示资源和文件视图&quot; /&gt;&#10;  &lt;MESSAGE value=&quot;refactor(archive): 重构存档功能支持大文件分卷- 新增处理大文件分卷的逻辑&amp;#10;- 优化存档流程，提高效率&amp;#10;-增加可用存档空间的管理&amp;#10;- 调整数据库访问接口，支持新的存档需求&quot; /&gt;&#10;  &lt;option name=&quot;LAST_COMMIT_MESSAGE&quot; value=&quot;refactor(archive): 重构存档功能支持大文件分卷- 新增处理大文件分卷的逻辑&amp;#10;- 优化存档流程，提高效率&amp;#10;-增加可用存档空间的管理&amp;#10;- 调整数据库访问接口，支持新的存档需求&quot; /&gt;&#10;  &lt;option name=&quot;OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT&quot; value=&quot;true&quot; /&gt;&#10;  &lt;option name=&quot;REFORMAT_BEFORE_PROJECT_COMMIT&quot; value=&quot;true&quot; /&gt;&#10;  &lt;option name=&quot;REARRANGE_BEFORE_PROJECT_COMMIT&quot; value=&quot;true&quot; /&gt;&#10;&lt;/component&gt;&#10;&lt;component name=&quot;XSLT-Support.FileAssociations.UIState&quot;&gt;&#10;  &lt;expand /&gt;&#10;  &lt;select /&gt;&#10;&lt;/component&gt;&#10;&lt;component name=&quot;com.intellij.coverage.CoverageDataManagerImpl&quot;&gt;" />
+                      <option name="filePath" value="$PROJECT_DIR$/.idea/workspace.xml" />
+                      <option name="range">
+                        <Range>
+                          <option name="endColumn" value="1" />
+                          <option name="endLine" value="315" />
+                          <option name="startColumn" value="1" />
+                          <option name="startLine" value="304" />
+                        </Range>
+                      </option>
+                      <option name="relativePath" value=".idea\workspace.xml" />
+                    </CodebaseContextVariableValue>
+                  </list>
+                </option>
+                <option name="codebaseReferences">
+                  <list>
+                    <KnowledgeReference>
+                      <option name="chunk" value="src\main\java\com\cc01cc\project\SmartArchive.java: package com.cc01cc.project;&#10;import com.cc01cc.project.dao.DatabaseAccessor;&#10;import com.cc01cc.project.dao.DatabaseInitializer;&#10;import com.cc01cc.project.dto.ArchiveMetadata;&#10;import lombok.extern.slf4j.Slf4j;&#10;import java.io.IOException;&#10;import java.nio.file.Path;&#10;/**&#10; * @author cc01cc&#10; * @createDate 2025-07-21 21:41&#10; */&#10;@Slf4j&#10;public class SmartArchive {&#10;    public static void main(String[] args) throws IOException {&#10;        log.info(&quot;Hello, World!&quot;);&#10;        String dbUrl = &quot;jdbc:sqlite:&quot; + &quot;smart_archive.sqlite&quot;;&#10;//        String testRootDir = &quot;W:\\zeolab\\w05-Premiere&quot;;&#10;        String testRootDir = &quot;W:\\zeolab\\w05-Premiere\\Who Controls the Internet\\Adobe Premiere Pro Auto-Save&quot;;&#10;        String testArchiveDir = &quot;W:\\zeolab\\test-archive&quot;;&#10;        // 初始化数据库&#10;        DatabaseInitializer dbInitializer = new DatabaseInitializer(dbUrl);&#10;        dbInitializer.initializeDatabase();&#10;        DatabaseAccessor databaseAccessor = new DatabaseAccessor(dbUrl);&#10;        DirectoryScanner.scanAndSaveDirectory(Path.of(testRootDir), databaseAccessor);&#10;//        // 测试创建空tar文件&#10;//        ArchiveMetadata archiveMetadata = new ArchiveMetadata();" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="32" />
+                          <option name="fileName" value="src\main\java\com\cc01cc\project\SmartArchive.java" />
+                          <option name="source" value="$PROJECT_DIR$/src/main/java/com/cc01cc/project/SmartArchive.java" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="1" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java:         File dbJournalFile = new File(&quot;test_database.db-journal&quot;);&#10;        if (dbJournalFile.exists()) {&#10;            dbJournalFile.delete();&#10;        }&#10;    } catch (SQLException e) {&#10;        fail(&quot;清理数据库连接失败: &quot; + e.getMessage());&#10;    }&#10;}&#10;@Test&#10;@DisplayName(&quot;测试数据库初始化成功&quot;)&#10;void testInitializeDatabaseSuccess() {&#10;    assertNotNull(databaseInitializer);&#10;    assertDoesNotThrow(() -&gt; databaseInitializer.initializeDatabase());&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 root_index 表是否正确创建&quot;)&#10;void testRootIndexTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;root_index&quot;));&#10;    &#10;    // 检查表结构&#10;    try (Statement stmt = connection.createStatement();&#10;         ResultSet rs = stmt.executeQuery(&quot;PRAGMA table_info(root_index)&quot;)) {&#10;        &#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;id&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;root_path&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;status&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;created_at&quot;, rs.getString(&quot;name&quot;));&#10;        assertTrue(rs.next());&#10;        assertEquals(&quot;updated_at&quot;, rs.getString(&quot;name&quot;));&#10;    }&#10;}&#10;@Test" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="85" />
+                          <option name="fileName" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java" />
+                          <option name="source" value="$PROJECT_DIR$/src/test/java/com/cc01cc/project/dao/DatabaseInitializerTest.java" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="47" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java: package com.cc01cc.project.dao;&#10;import org.junit.jupiter.api.*;&#10;import java.sql.Connection;&#10;import java.sql.DriverManager;&#10;import java.sql.ResultSet;&#10;import java.sql.SQLException;&#10;import java.sql.Statement;&#10;import java.io.File;&#10;import static org.junit.jupiter.api.Assertions.*;&#10;/**&#10; * DatabaseInitializer 的单元测试类&#10; */&#10;class DatabaseInitializerTest {&#10;    private static final String TEST_DB_URL = &quot;jdbc:sqlite:test_database.db&quot;;&#10;    private DatabaseInitializer databaseInitializer;&#10;    private Connection connection;&#10;    @BeforeEach&#10;    void setUp() {&#10;        databaseInitializer = new DatabaseInitializer(TEST_DB_URL);&#10;        databaseInitializer.initializeDatabase();&#10;        &#10;        try {&#10;            connection = DriverManager.getConnection(TEST_DB_URL);&#10;        } catch (SQLException e) {&#10;            fail(&quot;无法建立数据库连接: &quot; + e.getMessage());&#10;        }&#10;    }&#10;    @AfterEach&#10;    void tearDown() {&#10;        try {&#10;            if (connection != null &amp;&amp; !connection.isClosed()) {&#10;                connection.close();&#10;            }&#10;            &#10;            // 删除测试数据库文件&#10;            File dbFile = new File(&quot;test_database.db&quot;);&#10;            if (dbFile.exists()) {&#10;                dbFile.delete();&#10;            }" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="45" />
+                          <option name="fileName" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java" />
+                          <option name="source" value="$PROJECT_DIR$/src/test/java/com/cc01cc/project/dao/DatabaseInitializerTest.java" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="1" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value="src\main\java\com\cc01cc\project\ArchiveManager.java:  * @return 新创建的tar文件路径&#10; * @throws IOException 如果创建过程中发生IO错误&#10; */&#10;public static String createNewArchiveFile(String archiveDirectory, String archiveName) throws IOException {&#10;    Path archiveDirPath = Path.of(archiveDirectory);&#10;    // 确保存档目录存在且为空&#10;    if (!Files.exists(archiveDirPath)) {&#10;        Files.createDirectories(archiveDirPath);&#10;    } else if (!Files.isDirectory(archiveDirPath)) {&#10;        throw new IOException(&quot;存档路径不是一个目录: &quot; + archiveDirectory);&#10;    }&#10;    // 生成存档文件名&#10;    long counter = archiveCounter.getAndIncrement();&#10;    String archiveFileName = String.format(&quot;%s_%03d.tar&quot;, archiveName, counter);&#10;    Path archiveFilePath = archiveDirPath.resolve(archiveFileName);&#10;    // 创建空的tar文件&#10;    try (TarArchiveOutputStream tarOutput = new TarArchiveOutputStream(Files.newOutputStream(archiveFilePath))) {&#10;        tarOutput.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);&#10;        // 空的tar文件只需要正确关闭输出流即可&#10;        log.info(&quot;成功创建空的tar存档文件: {}&quot;, archiveFilePath);&#10;    }&#10;    return archiveFilePath.toString();&#10;}&#10;/**&#10; * 将指定根目录下的所有文件添加到存档中&#10; *&#10; * @param rootPath         根目录路径&#10; * @param archiveDirectory 存档目录路径&#10; * @param databaseAccessor 数据库访问器&#10; * @throws IOException 如果操作过程中发生IO错误&#10; *                     &lt;p&gt;&#10; *                     获取根目录所有文件的列表(包括文件路径, 以及文件大小)&#10; *                     如果文件大小超过存档限制大小，则临时跳过, 最后统一分卷处理大文件&#10; *                     执行存档&#10; */&#10;public static void addFilesToArchives(&#10;        String rootPath," />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="81" />
+                          <option name="fileName" value="src\main\java\com\cc01cc\project\ArchiveManager.java" />
+                          <option name="source" value="$PROJECT_DIR$/src/main/java/com/cc01cc/project/ArchiveManager.java" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="39" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value=".idea\workspace.xml:     &lt;SUITE FILE_PATH=&quot;coverage/SmartArchive$SmartArchive.ic&quot; NAME=&quot;SmartArchive Coverage Results&quot; MODIFIED=&quot;1753106202627&quot; SOURCE_PROVIDER=&quot;com.intellij.coverage.DefaultCoverageFileProvider&quot; RUNNER=&quot;idea&quot; COVERAGE_BY_TEST_ENABLED=&quot;false&quot; COVERAGE_TRACING_ENABLED=&quot;true&quot;&gt;&#10;      &lt;FILTER&gt;com.cc01cc.project.*&lt;/FILTER&gt;&#10;    &lt;/SUITE&gt;&#10;  &lt;/component&gt;&#10;&lt;/project&gt;" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="320" />
+                          <option name="fileName" value=".idea\workspace.xml" />
+                          <option name="source" value="$PROJECT_DIR$/.idea/workspace.xml" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="316" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value=".idea\workspace.xml:       &lt;option name=&quot;ENABLED&quot; value=&quot;true&quot; /&gt;&#10;    &lt;/pattern&gt;&#10;  &lt;/extension&gt;&#10;  &lt;method v=&quot;2&quot;&gt;&#10;    &lt;option name=&quot;Make&quot; enabled=&quot;true&quot; /&gt;&#10;  &lt;/method&gt;&#10;&lt;/configuration&gt;&#10;&lt;configuration name=&quot;DatabaseInitializerTest&quot; type=&quot;JUnit&quot; factoryName=&quot;JUnit&quot; temporary=&quot;true&quot; nameIsGenerated=&quot;true&quot;&gt;&#10;  &lt;module name=&quot;SmartArchive&quot; /&gt;&#10;  &lt;extension name=&quot;coverage&quot;&gt;&#10;    &lt;pattern&gt;&#10;      &lt;option name=&quot;PATTERN&quot; value=&quot;com.cc01cc.project.dao.*&quot; /&gt;&#10;      &lt;option name=&quot;ENABLED&quot; value=&quot;true&quot; /&gt;&#10;    &lt;/pattern&gt;&#10;  &lt;/extension&gt;&#10;  &lt;option name=&quot;PACKAGE_NAME&quot; value=&quot;com.cc01cc.project.dao&quot; /&gt;&#10;  &lt;option name=&quot;MAIN_CLASS_NAME&quot; value=&quot;com.cc01cc.project.dao.DatabaseInitializerTest&quot; /&gt;&#10;  &lt;option name=&quot;TEST_OBJECT&quot; value=&quot;class&quot; /&gt;&#10;  &lt;method v=&quot;2&quot;&gt;&#10;    &lt;option name=&quot;Make&quot; enabled=&quot;true&quot; /&gt;&#10;  &lt;/method&gt;&#10;&lt;/configuration&gt;&#10;&lt;recent_temporary&gt;&#10;  &lt;list&gt;&#10;    &lt;item itemvalue=&quot;JUnit.DatabaseInitializerTest&quot; /&gt;&#10;    &lt;item itemvalue=&quot;Application.SmartArchive&quot; /&gt;" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="123" />
+                          <option name="fileName" value=".idea\workspace.xml" />
+                          <option name="source" value="$PROJECT_DIR$/.idea/workspace.xml" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="98" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java: @DisplayName(&quot;测试 directory_index 表是否正确创建&quot;)&#10;void testDirectoryIndexTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;directory_index&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 directory_tree 表是否正确创建&quot;)&#10;void testDirectoryTreeTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;directory_tree&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 file_index 表是否正确创建&quot;)&#10;void testFileIndexTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;file_index&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 archive_metadata 表是否正确创建&quot;)&#10;void testArchiveMetadataTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;archive_metadata&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 archive_asset 表是否正确创建&quot;)&#10;void testArchiveAssetTableCreation() throws SQLException {&#10;    assertTrue(tableExists(&quot;archive_asset&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试 v_file 视图是否正确创建&quot;)&#10;void testFilesByRootViewCreation() throws SQLException {&#10;    assertTrue(viewExists(&quot;v_file&quot;));&#10;}&#10;@Test&#10;@DisplayName(&quot;测试所有必需的表和视图都已创建&quot;)&#10;void testAllTablesAndViewsCreated() throws SQLException {&#10;    String[] expectedTables = {&#10;        &quot;root_index&quot;, &quot;directory_index&quot;, &quot;directory_tree&quot;, &quot;file_index&quot;,&#10;        &quot;archive_metadata&quot;, &quot;archive_asset&quot;, &quot;file_volume_asset&quot;&#10;    };" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="128" />
+                          <option name="fileName" value="src\test\java\com\cc01cc\project\dao\DatabaseInitializerTest.java" />
+                          <option name="source" value="$PROJECT_DIR$/src/test/java/com/cc01cc/project/dao/DatabaseInitializerTest.java" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="86" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value="src\main\java\com\cc01cc\project\ArchiveManager.java: package com.cc01cc.project;&#10;import com.cc01cc.project.dao.DatabaseAccessor;&#10;import com.cc01cc.project.dto.*;&#10;import lombok.extern.slf4j.Slf4j;&#10;import org.apache.commons.codec.digest.DigestUtils;&#10;import org.apache.commons.compress.archivers.tar.TarArchiveEntry;&#10;import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;&#10;import java.io.FileInputStream;&#10;import java.io.IOException;&#10;import java.io.InputStream;&#10;import java.nio.file.Files;&#10;import java.nio.file.Path;&#10;import java.nio.file.Paths;&#10;import java.util.ArrayList;&#10;import java.util.List;&#10;import java.util.concurrent.atomic.AtomicLong;&#10;/**&#10; * 存档管理器，负责创建和管理存档文件&#10; */&#10;@Slf4j&#10;public class ArchiveManager {&#10;    // 当前存档编号计数器&#10;    private static final AtomicLong archiveCounter = new AtomicLong(1);&#10;    // 存档 limit size (默认 1GB)&#10;    private static long archiveLimitSize = 1024 * 1024 * 1024L;&#10;    public ArchiveManager(long archiveLimitSize) {&#10;        ArchiveManager.archiveLimitSize = archiveLimitSize;&#10;    }&#10;    /**&#10;     * 创建一个新的tar存档文件，自动命名&#10;     *&#10;     * @param archiveDirectory 存档目录路径" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="38" />
+                          <option name="fileName" value="src\main\java\com\cc01cc\project\ArchiveManager.java" />
+                          <option name="source" value="$PROJECT_DIR$/src/main/java/com/cc01cc/project/ArchiveManager.java" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="1" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                    <KnowledgeReference>
+                      <option name="chunk" value=".idea\workspace.xml:   &lt;MESSAGE value=&quot;feat(database): 优化数据库设计并完善分卷存档功能&amp;#10;&amp;#10;- 修改 file_index 表，将 volume_count 字段从 NOT NULL 改为可为空&amp;#10;- 添加新的视图 v_file 和 v_asset，分别用于查看文件列表和资源列表&amp;#10;- 实现文件重复检测和处理逻辑，优化大文件分卷功能&amp;#10;- 新增 ArchiveDesign 类，用于规划存档策略&amp;#10;- 重构 ArchiveManager 类，支持分卷存档和重复文件处理&amp;#10;- 更新 DatabaseAccessor 类，增加查找文件和资源的方法&amp;#10;- 新增 ViewAsset 和 ViewFile 类，用于表示资源和文件视图&quot; /&gt;&#10;  &lt;MESSAGE value=&quot;refactor(archive): 重构存档功能支持大文件分卷- 新增处理大文件分卷的逻辑&amp;#10;- 优化存档流程，提高效率&amp;#10;-增加可用存档空间的管理&amp;#10;- 调整数据库访问接口，支持新的存档需求&quot; /&gt;&#10;  &lt;option name=&quot;LAST_COMMIT_MESSAGE&quot; value=&quot;refactor(archive): 重构存档功能支持大文件分卷- 新增处理大文件分卷的逻辑&amp;#10;- 优化存档流程，提高效率&amp;#10;-增加可用存档空间的管理&amp;#10;- 调整数据库访问接口，支持新的存档需求&quot; /&gt;&#10;  &lt;option name=&quot;OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT&quot; value=&quot;true&quot; /&gt;&#10;  &lt;option name=&quot;REFORMAT_BEFORE_PROJECT_COMMIT&quot; value=&quot;true&quot; /&gt;&#10;  &lt;option name=&quot;REARRANGE_BEFORE_PROJECT_COMMIT&quot; value=&quot;true&quot; /&gt;&#10;&lt;/component&gt;&#10;&lt;component name=&quot;XSLT-Support.FileAssociations.UIState&quot;&gt;&#10;  &lt;expand /&gt;&#10;  &lt;select /&gt;&#10;&lt;/component&gt;&#10;&lt;component name=&quot;com.intellij.coverage.CoverageDataManagerImpl&quot;&gt;" />
+                      <option name="metadata">
+                        <KnowledgeReferenceMetadata>
+                          <option name="endPos" value="315" />
+                          <option name="fileName" value=".idea\workspace.xml" />
+                          <option name="source" value="$PROJECT_DIR$/.idea/workspace.xml" />
+                          <option name="sourceType" value="code" />
+                          <option name="startPos" value="304" />
+                        </KnowledgeReferenceMetadata>
+                      </option>
+                    </KnowledgeReference>
+                  </list>
+                </option>
+                <option name="command" value="" />
+                <option name="conversationId" value="0198b8bde6397bb49c4416315a8d3bbf" />
+                <option name="historyDocumentMap">
+                  <map>
+                    <entry key="file:///C:/zeogit/Initial/SmartArchive/SmartArchive/src/main/java/com/cc01cc/project/ArchiveManager.java" value="package com.cc01cc.project;&#10;&#10;import com.cc01cc.project.dao.DatabaseAccessor;&#10;import com.cc01cc.project.dto.*;&#10;import lombok.extern.slf4j.Slf4j;&#10;import org.apache.commons.codec.digest.DigestUtils;&#10;import org.apache.commons.compress.archivers.tar.TarArchiveEntry;&#10;import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;&#10;&#10;import java.io.FileInputStream;&#10;import java.io.IOException;&#10;import java.io.InputStream;&#10;import java.nio.file.Files;&#10;import java.nio.file.Path;&#10;import java.nio.file.Paths;&#10;import java.util.ArrayList;&#10;import java.util.List;&#10;import java.util.concurrent.atomic.AtomicLong;&#10;&#10;/**&#10; * 存档管理器，负责创建和管理存档文件&#10; */&#10;@Slf4j&#10;public class ArchiveManager {&#10;&#10;    // 当前存档编号计数器&#10;    private static final AtomicLong archiveCounter = new AtomicLong(1);&#10;    // 存档 limit size (默认 1GB)&#10;    private static long archiveLimitSize = 1024 * 1024 * 1024L;&#10;&#10;    public ArchiveManager(long archiveLimitSize) {&#10;        ArchiveManager.archiveLimitSize = archiveLimitSize;&#10;    }&#10;&#10;    /**&#10;     * 创建一个新的tar存档文件，自动命名&#10;     *&#10;     * @param archiveDirectory 存档目录路径&#10;     * @return 新创建的tar文件路径&#10;     * @throws IOException 如果创建过程中发生IO错误&#10;     */&#10;    public static String createNewArchiveFile(String archiveDirectory, String archiveName) throws IOException {&#10;        Path archiveDirPath = Path.of(archiveDirectory);&#10;&#10;        // 确保存档目录存在且为空&#10;        if (!Files.exists(archiveDirPath)) {&#10;            Files.createDirectories(archiveDirPath);&#10;        } else if (!Files.isDirectory(archiveDirPath)) {&#10;            throw new IOException(&quot;存档路径不是一个目录: &quot; + archiveDirectory);&#10;        }&#10;&#10;        // 生成存档文件名&#10;        long counter = archiveCounter.getAndIncrement();&#10;        String archiveFileName = String.format(&quot;%s_%03d.tar&quot;, archiveName, counter);&#10;        Path archiveFilePath = archiveDirPath.resolve(archiveFileName);&#10;&#10;        // 创建空的tar文件&#10;        try (TarArchiveOutputStream tarOutput = new TarArchiveOutputStream(Files.newOutputStream(archiveFilePath))) {&#10;            tarOutput.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);&#10;            // 空的tar文件只需要正确关闭输出流即可&#10;            log.info(&quot;成功创建空的tar存档文件: {}&quot;, archiveFilePath);&#10;        }&#10;&#10;        return archiveFilePath.toString();&#10;    }&#10;&#10;&#10;    /**&#10;     * 将指定根目录下的所有文件添加到存档中&#10;     *&#10;     * @param rootPath         根目录路径&#10;     * @param archiveDirectory 存档目录路径&#10;     * @param databaseAccessor 数据库访问器&#10;     * @throws IOException 如果操作过程中发生IO错误&#10;     *                     &lt;p&gt;&#10;     *                     获取根目录所有文件的列表(包括文件路径, 以及文件大小)&#10;     *                     如果文件大小超过存档限制大小，则临时跳过, 最后统一分卷处理大文件&#10;     *                     执行存档&#10;     */&#10;    public static void addFilesToArchives(&#10;            String rootPath,&#10;            String archiveDirectory,&#10;            DatabaseAccessor databaseAccessor) throws IOException {&#10;        // 查找根目录ID&#10;        long rootId = databaseAccessor.findRootIdByPath(rootPath);&#10;        if (rootId == -1) {&#10;            log.error(&quot;根目录 {} 不存在于数据库中&quot;, rootPath);&#10;            return;&#10;        }&#10;&#10;        // 获取该根目录下的所有文件&#10;        List&lt;ViewFile&gt; fileList = databaseAccessor.fineViewFilesByRootId(rootId);&#10;        log.info(&quot;找到 {} 个文件需要添加到存档&quot;, fileList.size());&#10;&#10;        // 遍历文件并添加到存档&#10;        for (ViewFile viewFile : fileList) {&#10;&#10;            Path filePath = Path.of(viewFile.getRootPath(), viewFile.getDirectoryPath(), viewFile.getFileName());&#10;&#10;            if (Files.notExists(filePath)) {&#10;                log.warn(&quot;文件不存在: {}&quot;, filePath);&#10;                continue;&#10;            }&#10;&#10;            // 计算文件的hash值，用于重命名文件避免重复&#10;            String fileHash;&#10;            try (InputStream fis = Files.newInputStream(filePath)) {&#10;                fileHash = DigestUtils.sha256Hex(fis);&#10;            }&#10;&#10;            // 查询是否存在相同文件, 如果不存在, 才添加存档&#10;            ArchiveAsset existAsset = databaseAccessor.findArchiveAssetByHash(fileHash);&#10;&#10;            long assetId = -1;&#10;            if (existAsset == null) {&#10;                long fileOffset = 0;&#10;                long remainingSize = viewFile.getFileSize();&#10;                String currentArchiveFile = null;&#10;                TarArchiveOutputStream tarOutput = null;&#10;                long currentArchiveSize = 0;&#10;&#10;                try {&#10;                    while (remainingSize &gt; 0) {&#10;                        // 如果当前存档已满或者还没有创建存档，则创建新存档&#10;                        if (currentArchiveSize &gt;= archiveLimitSize || tarOutput == null) {&#10;                            // 关闭当前存档（如果存在）&#10;                            if (tarOutput != null) {&#10;                                tarOutput.finish();&#10;                                tarOutput.close();&#10;                            }&#10;&#10;                            // 创建新存档&#10;                            currentArchiveFile = createNewArchiveFile(archiveDirectory, &quot;archive&quot;);&#10;                            tarOutput = new TarArchiveOutputStream(Files.newOutputStream(Path.of(currentArchiveFile)));&#10;                            tarOutput.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);&#10;                            currentArchiveSize = 0;&#10;                        }&#10;&#10;                        // 计算本次可以写入的数据量&#10;                        long chunkSize = Math.min(remainingSize, archiveLimitSize - currentArchiveSize);&#10;&#10;                        // 创建输入流，从文件的指定偏移量开始读取&#10;                        try (InputStream fileInputStream = new FileInputStream(filePath.toFile())) {&#10;                            // 跳过已经处理的部分&#10;                            fileInputStream.skipNBytes(fileOffset);&#10;&#10;                            // 限制读取的数据量&#10;                            InputStream limitedInputStream = new LimitedInputStream(fileInputStream, chunkSize);&#10;&#10;                            // 创建视图资产信息&#10;                            ViewAsset viewAsset = new ViewAsset();&#10;                            viewAsset.setAssetMtime(viewFile.getFileMtime());&#10;                            viewAsset.setAssetSize(chunkSize);&#10;                            // 可以根据需要设置其他属性&#10;&#10;                            // 将数据块添加到当前存档&#10;                            addAssetToArchive(tarOutput, limitedInputStream, viewAsset);&#10;                        }&#10;&#10;                        // 更新状态&#10;                        fileOffset += chunkSize;&#10;                        remainingSize -= chunkSize;&#10;                        currentArchiveSize += chunkSize;&#10;                    }&#10;                } finally {&#10;                    // 确保输出流被正确关闭&#10;                    if (tarOutput != null) {&#10;                        try {&#10;                            tarOutput.finish();&#10;                            tarOutput.close();&#10;                        } catch (IOException e) {&#10;                            log.error(&quot;关闭存档输出流时出错&quot;, e);&#10;                        }&#10;                    }&#10;                }&#10;            }&#10;&#10;            // 插入文件索引&#10;            FileVolumeAsset fileVolumeAsset = new FileVolumeAsset();&#10;            fileVolumeAsset.setFileId(viewFile.getFileId());&#10;            fileVolumeAsset.setAssetId(assetId);&#10;            fileVolumeAsset.setStatus(&quot;HEALTH&quot;);&#10;            fileVolumeAsset.setCreatedAt(System.currentTimeMillis());&#10;            fileVolumeAsset.setUpdatedAt(System.currentTimeMillis());&#10;            databaseAccessor.insertFileVolumeAsset(fileVolumeAsset);&#10;&#10;            log.info(&quot;文件 {} 已添加到存档&quot;, filePath);&#10;        }&#10;&#10;        log.info(&quot;所有文件已添加到存档目录 {}&quot;, archiveDirectory);&#10;    }&#10;&#10;    private static void addAssetToArchive(TarArchiveOutputStream tarOutput, InputStream dataStream, ViewAsset viewAsset) throws IOException {&#10;        // 创建tar条目，使用asset名称作为文件名&#10;        TarArchiveEntry entry = new TarArchiveEntry(viewAsset.getAssetName());&#10;        entry.setSize(viewAsset.getAssetSize());&#10;        entry.setModTime(viewAsset.getAssetMtime());&#10;&#10;        // 添加条目到tar文件&#10;        tarOutput.putArchiveEntry(entry);&#10;&#10;        // 流式写入数据&#10;        byte[] buffer = new byte[8192];&#10;        int bytesRead;&#10;        while ((bytesRead = dataStream.read(buffer)) != -1) {&#10;            tarOutput.write(buffer, 0, bytesRead);&#10;        }&#10;&#10;        // 完成条目写入&#10;        tarOutput.closeArchiveEntry();&#10;    }&#10;&#10;}&#10;&#10;" />
+                  </map>
+                </option>
+                <option name="messageId" value="0198b8becd757bb49c4427c3eeb0fdca" />
+                <option name="question" value="请检查这里的程序代码是否存在逻辑或者编码上的问题?" />
+                <option name="rating" value="UNRATED" />
+                <option name="referenceBeans">
+                  <list />
+                </option>
+                <option name="status" value="SUCCESS" />
+                <option name="variables">
+                  <list>
+                    <CodebaseVariable>
+                      <option name="selectedPlaceHolder">
+                        <Object />
+                      </option>
+                      <option name="selectedVariable">
+                        <Object />
+                      </option>
+                    </CodebaseVariable>
+                  </list>
+                </option>
+              </Turn>
+            </list>
+          </option>
+          <option name="updateTime" value="1755446189249" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1755066777942" />
+          <option name="id" value="0198a221c1567dc89ff91da43acb6f75" />
+          <option name="title" value="新对话 2025年8月13日 14:32:57" />
+          <option name="updateTime" value="1755066777942" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1753977886697" />
+          <option name="id" value="0198613a97e9739ca8fcf11c2e851320" />
+          <option name="title" value="新对话 2025年8月01日 00:04:46" />
+          <option name="updateTime" value="1753977886697" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1753104856216" />
+          <option name="id" value="01982d313498763d95ead626bc661257" />
+          <option name="title" value="新对话 2025年7月21日 21:34:16" />
+          <option name="updateTime" value="1753104856216" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1753104334949" />
+          <option name="id" value="01982d294064759fa2fdfec94b4b9d45" />
+          <option name="title" value="新对话 2025年7月21日 21:25:34" />
+          <option name="updateTime" value="1753104334949" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1752635054317" />
+          <option name="id" value="0198113098ed7ba78dbfedf6914fb0c6" />
+          <option name="title" value="新对话 2025年7月16日 11:04:14" />
+          <option name="updateTime" value="1752635054317" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1752566023658" />
+          <option name="id" value="01980d1345ea7a69bdd769276133f71c" />
+          <option name="title" value="新对话 2025年7月15日 15:53:43" />
+          <option name="updateTime" value="1752566023658" />
+        </Conversation>
+        <Conversation>
+          <option name="createTime" value="1752565748503" />
+          <option name="id" value="01980d0f13177703b42bf18853228c48" />
+          <option name="title" value="新对话 2025年7月15日 15:49:08" />
+          <option name="updateTime" value="1752565748503" />
+        </Conversation>
+      </list>
+    </option>
+  </component>
+</project>

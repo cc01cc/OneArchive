@@ -1,0 +1,31 @@
+/*
+ * Copyright 2025. Zheng, Yihong (ZEO, github.com/cc01cc)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.cc01cc.project;
+
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * 获取根目录所有文件的列表(包括文件路径, 以及文件大小)
+ * 根据文件大小, 制定存档规划(例如, 根据存档大小限制, 合理分配文件存档位置, 拆分大文件)
+ * 执行存档
+ * <p>
+ * 1. 大文件需要分卷
+ */
+@Slf4j
+public class ArchiveDesign {
+
+}

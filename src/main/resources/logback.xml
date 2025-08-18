@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2025. Zheng, Yihong (ZEO, github.com/cc01cc)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!-- 开启配置热更新（每30秒扫描） -->
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <!-- ==================== 属性定义 ==================== -->
+    <property name="LOG_HOME" value="logs"/>
+    <property name="APP_NAME" value="my-application"/>
+    <property name="CONSOLE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n"/>
+    <property name="FILE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- ==================== 控制台Appender (IDEA彩色优化) ==================== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 优化IDEA控制台渲染 -->
+        <withJansi>true</withJansi>
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+        </encoder>
+        <!-- 生产环境关闭控制台输出 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${console.level:-INFO}</level>
+        </filter>
+    </appender>
+
+    <!-- ==================== 文件滚动Appender ==================== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 按天归档 + 文件大小限制 -->
+            <fileNamePattern>${LOG_HOME}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory> <!-- 保留30天 -->
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ==================== 异步日志提升性能 ==================== -->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize> <!-- 队列容量 -->
+        <discardingThreshold>0</discardingThreshold> <!-- 不丢弃任何日志 -->
+        <includeCallerData>true</includeCallerData> <!-- 包含调用信息 -->
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <!-- ==================== 包级别日志控制 ==================== -->
+    <!-- 开发环境：显示SQL日志 -->
+    <springProfile name="dev">
+        <logger name="org.springframework.web" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.type.descriptor.sql" level="TRACE"/>
+    </springProfile>
+
+    <!-- 生产环境：关闭框架DEBUG日志 -->
+    <springProfile name="prod">
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="com.netflix" level="WARN"/>
+    </springProfile>
+
+    <!-- ==================== 特殊包日志级别 ==================== -->
+    <logger name="com.example.sensitive" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC"/>
+    </logger>
+
+    <!-- ==================== 根日志配置 ==================== -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC"/> <!-- 生产环境可移除CONSOLE -->
+    </root>
+
+</configuration>
