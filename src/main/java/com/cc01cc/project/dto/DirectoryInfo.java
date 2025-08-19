@@ -26,12 +26,12 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class DirectoryInfo {
-    String status;
-    long createdAt;
-    long updatedAt;
-    private long id;
-    private long rootId;
+    private String status;
+    private Long createdAt;
+    private Long updatedAt;
+    private Long id;
+    private Long rootId;
     private String name;
-    private long mtime;
+    private Long mtime;
     private String path;
 }

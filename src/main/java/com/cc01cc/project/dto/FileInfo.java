@@ -20,14 +20,14 @@ import lombok.Data;
 
 @Data
 public class FileInfo {
-    private long id;
-    private long directoryId;
+    private Long id;
+    private Long directoryId;
     private String name;
-    private long size;
-    private long mtime;
+    private Long size;
+    private Long mtime;
     private String hash;
     private int volumeCount = 1;
     private String status;
-    private long createdAt;
-    private long updatedAt;
+    private Long createdAt;
+    private Long updatedAt;
 }

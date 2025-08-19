@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
+// FileProcessingStrategy.java
 package com.cc01cc.project;
 
-import lombok.extern.slf4j.Slf4j;
+import com.cc01cc.project.dto.ArchiveContext;
+import com.cc01cc.project.dto.ViewFile;
 
-/**
- * 获取根目录所有文件的列表(包括文件路径, 以及文件大小)
- * 根据文件大小, 制定存档规划(例如, 根据存档大小限制, 合理分配文件存档位置, 拆分大文件)
- * 执行存档
- * <p>
- * 1. 大文件需要分卷
- */
-@Slf4j
-public class ArchiveDesign {
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 
+public interface FileProcessingStrategy {
+    List<Long> process(ViewFile viewFile, Path filePath, ArchiveContext context) throws IOException;
 }
+
+
+

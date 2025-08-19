@@ -22,11 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class FileVolumeAsset {
-    private long id;
-    private long fileId;
-    private long assetId;
-    private int volumeOrder;
+    private Long id;
+    private Long fileId;
+    private Long assetId;
+    private Long volumeOrder;
     private String status;
-    private long createdAt;
-    private long updatedAt;
+    private Long createdAt;
+    private Long updatedAt;
 }

@@ -51,7 +51,7 @@ public class DatabaseAccessor {
      * @return 数据库连接
      * @throws SQLException SQL异常
      */
-    private Connection getConnection() throws SQLException {
+    public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(dbUrl);
     }
 
@@ -285,7 +285,7 @@ public class DatabaseAccessor {
      * @param fileVolumeAsset 文件与存档资源映射
      * @return 插入记录的ID
      */
-    public long insertFileVolumeAsset(FileVolumeAsset fileVolumeAsset) {
+    public Long insertFileVolumeAsset(FileVolumeAsset fileVolumeAsset) {
         String sql = """
                 INSERT INTO file_volume_asset(file_id, asset_id, volume_order, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, strftime('%s', 'now'), strftime('%s', 'now'))
@@ -297,7 +297,7 @@ public class DatabaseAccessor {
 
             pstmt.setLong(1, fileVolumeAsset.getFileId());
             pstmt.setLong(2, fileVolumeAsset.getAssetId());
-            pstmt.setInt(3, fileVolumeAsset.getVolumeOrder());
+            pstmt.setLong(3, fileVolumeAsset.getVolumeOrder());
             pstmt.setString(4, fileVolumeAsset.getStatus());
 
             int affectedRows = pstmt.executeUpdate();
@@ -314,10 +314,10 @@ public class DatabaseAccessor {
         } catch (SQLException e) {
             log.error("插入文件与存档资源映射时发生错误", e);
         }
-        return -1;
+        return null;
     }
 
-    public long findRootIdByPath(String path) {
+    public Long findRootIdByPath(String path) {
         String sql = "SELECT id FROM root_index WHERE root_path = ?";
 
         try (
@@ -334,7 +334,7 @@ public class DatabaseAccessor {
         } catch (SQLException e) {
             log.error("查询根目录ID时发生错误", e);
         }
-        return -1;
+        return null;
     }
 
     /**
@@ -398,13 +398,16 @@ public class DatabaseAccessor {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     FileInfo fileInfo = new FileInfo();
-                    fileInfo.setId(rs.getLong("file_id"));
+                    fileInfo.setId(rs.getLong("id"));
+                    fileInfo.setDirectoryId(rs.getLong("directory_id"));
                     fileInfo.setName(rs.getString("file_name"));
                     fileInfo.setSize(rs.getLong("file_size"));
                     fileInfo.setMtime(rs.getLong("file_mtime"));
                     fileInfo.setHash(rs.getString("file_hash"));
-                    fileInfo.setDirectoryId(rs.getLong("directory_id"));
                     fileInfo.setVolumeCount(rs.getInt("volume_count"));
+                    fileInfo.setStatus(rs.getString("status"));
+                    fileInfo.setCreatedAt(rs.getLong("created_at"));
+                    fileInfo.setUpdatedAt(rs.getLong("updated_at"));
 
                     files.add(fileInfo);
                 }
@@ -480,7 +483,7 @@ public class DatabaseAccessor {
         return null;
     }
 
-    public FileInfo findFileByHash(String fileHash) {
+    public FileInfo findHealthFileByHash(String fileHash) {
 
         String sql = "SELECT * FROM file_index WHERE file_hash = ?";
 
@@ -494,12 +497,15 @@ public class DatabaseAccessor {
                     FileInfo fileInfo = new FileInfo();
                     fileInfo.setId(rs.getLong("id"));
                     fileInfo.setDirectoryId(rs.getLong("directory_id"));
-                    fileInfo.setName(rs.getString("name"));
-                    fileInfo.setSize(rs.getLong("size"));
-                    fileInfo.setMtime(rs.getLong("mtime"));
+                    fileInfo.setName(rs.getString("file_name"));
+                    fileInfo.setSize(rs.getLong("file_size"));
+                    fileInfo.setMtime(rs.getLong("file_mtime"));
                     fileInfo.setHash(rs.getString("file_hash"));
                     fileInfo.setVolumeCount(rs.getInt("volume_count"));
                     fileInfo.setStatus(rs.getString("status"));
+                    fileInfo.setCreatedAt(rs.getLong("created_at"));
+                    fileInfo.setUpdatedAt(rs.getLong("updated_at"));
+                    return fileInfo;
                 }
             }
         } catch (SQLException e) {
@@ -510,7 +516,7 @@ public class DatabaseAccessor {
 
     public List<FileVolumeAsset> findFileVolumeAssetByFileId(long id) {
 
-        String sql = "SELECT * FROM file_volume_asset WHERE file_id = ?";
+        String sql = "SELECT * FROM file_volume_asset WHERE file_id = ? AND status = 'HEALTH'";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -522,7 +528,7 @@ public class DatabaseAccessor {
                     fileVolumeAsset.setId(rs.getLong("id"));
                     fileVolumeAsset.setFileId(rs.getLong("file_id"));
                     fileVolumeAsset.setAssetId(rs.getLong("asset_id"));
-                    fileVolumeAsset.setVolumeOrder(rs.getInt("volume_order"));
+                    fileVolumeAsset.setVolumeOrder(rs.getLong("volume_order"));
                     fileVolumeAsset.setStatus(rs.getString("status"));
                     fileVolumeAsset.setCreatedAt(rs.getLong("created_at"));
                     fileVolumeAsset.setUpdatedAt(rs.getLong("updated_at"));
@@ -590,5 +596,102 @@ public class DatabaseAccessor {
         } catch (SQLException e) {
             log.error("更新存档元数据时发生错误", e);
         }
+    }
+
+    public List<ViewAsset> findViewAssetByFileId(Long fileId) {
+        String sql = "SELECT * FROM v_asset WHERE file_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, fileId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<ViewAsset> viewAssets = new ArrayList<>();
+                while (rs.next()) {
+                    ViewAsset viewAsset = new ViewAsset();
+                    viewAsset.setArchiveId(rs.getLong("archive_id"));
+                    viewAsset.setArchiveName(rs.getString("archive_name"));
+                    viewAsset.setArchiveStatus(rs.getString("archive_status"));
+                    viewAsset.setAssetId(rs.getLong("asset_id"));
+                    viewAsset.setAssetName(rs.getString("asset_name"));
+                    viewAsset.setAssetSize(rs.getLong("asset_size"));
+                    viewAsset.setAssetHash(rs.getString("asset_hash"));
+                    viewAsset.setAssetMtime(rs.getLong("asset_mtime"));
+                    viewAsset.setAssetRelativePath(rs.getString("asset_relative_path"));
+                    viewAsset.setAssetStatus(rs.getString("asset_status"));
+                    viewAsset.setFileId(rs.getLong("file_id"));
+                    viewAsset.setVolumeOrder(rs.getLong("volume_order"));
+                    viewAssets.add(viewAsset);
+                }
+                return viewAssets;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void updateArchiveAsset(ArchiveAsset asset) {
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(
+                     "UPDATE archive_asset SET asset_name = ?, asset_size = ?, asset_hash = ?, " +
+                             "asset_mtime = ?, relative_path = ?, status = ?, updated_at = ? WHERE id = ?")) {
+            preparedStatement.setString(1, asset.getAssetName());
+            preparedStatement.setLong(2, asset.getAssetSize());
+            preparedStatement.setString(3, asset.getAssetHash());
+            preparedStatement.setLong(4, asset.getAssetMtime());
+            preparedStatement.setString(5, asset.getRelativePath());
+            preparedStatement.setString(6, asset.getStatus());
+            preparedStatement.setLong(7, asset.getUpdatedAt());
+            preparedStatement.setLong(8, asset.getId());
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            log.error("更新存档资产时发生错误", e);
+        }
+    }
+
+    public void updateFileInfo(FileInfo fileInfo) {
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(
+                     "UPDATE file_index SET id = ?, directory_id = ?,file_hash = ?, file_name=?, file_size =?, file_mtime =?, status = ?, updated_at = ? WHERE id = ?"
+             )) {
+            preparedStatement.setLong(1, fileInfo.getId());
+            preparedStatement.setLong(2, fileInfo.getDirectoryId());
+            preparedStatement.setString(3, fileInfo.getHash());
+            preparedStatement.setString(4, fileInfo.getName());
+            preparedStatement.setLong(5, fileInfo.getSize());
+            preparedStatement.setLong(6, fileInfo.getMtime());
+            preparedStatement.setString(7, fileInfo.getStatus());
+            preparedStatement.setLong(8, fileInfo.getUpdatedAt());
+            preparedStatement.setLong(9, fileInfo.getId());
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            log.error("更新文件信息时发生错误", e);
+        }
+
+    }
+
+    public FileInfo findFileInfoById(Long fileId) {
+        String sql = "SELECT * FROM file_index WHERE id = ?";
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setLong(1, fileId);
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                if (rs.next()) {
+                    FileInfo fileInfo = new FileInfo();
+                    fileInfo.setId(rs.getLong("id"));
+                    fileInfo.setDirectoryId(rs.getLong("directory_id"));
+                    fileInfo.setName(rs.getString("file_name"));
+                    fileInfo.setSize(rs.getLong("file_size"));
+                    fileInfo.setMtime(rs.getLong("file_mtime"));
+                    fileInfo.setHash(rs.getString("file_hash"));
+                    fileInfo.setVolumeCount(rs.getInt("volume_count"));
+                    fileInfo.setStatus(rs.getString("status"));
+                    fileInfo.setCreatedAt(rs.getLong("created_at"));
+                    fileInfo.setUpdatedAt(rs.getLong("updated_at"));
+                    return fileInfo;
+                }
+            }
+        } catch (SQLException e) {
+            log.error("查询文件信息时发生错误", e);
+        }
+        return null;
     }
 }

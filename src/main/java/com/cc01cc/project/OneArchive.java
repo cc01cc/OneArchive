@@ -42,7 +42,10 @@ public class OneArchive {
 
         DatabaseAccessor databaseAccessor = new DatabaseAccessor(dbUrl);
         DirectoryScanner.scanAndSaveDirectory(Path.of(testRootDir), databaseAccessor);
+
         // 添加文件到tar文件
-        ArchiveManager.addFilesToArchives(testRootDir, testArchiveDir, 1024 * 1024L * 1024, databaseAccessor);
+        ArchiveIn.archive(testRootDir, testArchiveDir, 1024 * 1024L * 1024, databaseAccessor);
+        String testUnArchiveDir = "W:\\zeolab\\test-unarchive";
+        ArchiveOut.unArchive(testRootDir, testArchiveDir, testUnArchiveDir, databaseAccessor);
     }
 }

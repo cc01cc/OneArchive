@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dao;
+package unit.com.cc01cc.project.dao;
 
+import com.cc01cc.project.dao.DatabaseInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

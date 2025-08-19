@@ -21,16 +21,16 @@ import lombok.Data;
 
 @Data
 public class ViewAsset {
-    private Integer archiveId;
+    private Long archiveId;
     private String archiveName;
     private String archiveStatus;
-    private Integer assetId;
+    private Long assetId;
     private String assetName;
     private Long assetSize;
     private String assetHash;
-    private Integer assetMtime;
+    private Long assetMtime;
     private String assetRelativePath;
     private String assetStatus;
-    private Integer fileId;
-    private Integer volumeOrder;
+    private Long fileId;
+    private Long volumeOrder;
 }

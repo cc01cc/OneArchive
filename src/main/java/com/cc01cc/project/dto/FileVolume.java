@@ -20,11 +20,11 @@ import lombok.Data;
 
 @Data
 public class FileVolume {
-    private long id;
-    private long fileId;
-    private long volumeCount;
+    private Long id;
+    private Long fileId;
+    private Long volumeCount;
     private String relativePath;
     private String status;
-    private long createdAt;
-    private long updatedAt;
+    private Long createdAt;
+    private Long updatedAt;
 }

@@ -46,10 +46,12 @@ public class DirectoryScanner {
      * @throws IOException 如果扫描过程中发生IO错误
      */
     public static void scanAndSaveDirectory(Path startPath, DatabaseAccessor databaseAccessor) throws IOException {
-        long tempId = databaseAccessor.findRootIdByPath(startPath.toString());
+        // 根目录-需要转为绝对路径
+        String rootAbsolutePath = startPath.toAbsolutePath().toString();
+        Long tempId = databaseAccessor.findRootIdByPath(rootAbsolutePath);
         // 插入根目录
-        if (tempId == -1L) {
-            tempId = databaseAccessor.insertRootPath(startPath.toString());
+        if (tempId == null) {
+            tempId = databaseAccessor.insertRootPath(rootAbsolutePath);
         }
         long rootId = tempId;
 

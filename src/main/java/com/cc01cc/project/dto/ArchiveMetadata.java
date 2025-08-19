@@ -30,9 +30,9 @@ public class ArchiveMetadata {
     private String name;
     private Long archiveLimitSize;
     private String archiveHash;
-    private Integer isCompressed;
+    private Integer isCompressed = 0;
     private String compressedAlgorithm;
-    private Integer isEncrypted;
+    private Integer isEncrypted = 0;
     private String encryptionAlgorithm;
     private String status;
     private Long createdAt;

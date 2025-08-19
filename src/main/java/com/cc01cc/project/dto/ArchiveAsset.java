@@ -26,14 +26,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Data
 public class ArchiveAsset {
-    private long id;
-    private long archiveId;
+    private Long id;
+    private Long archiveId;
     private String assetName;
-    private long assetSize;
+    private Long assetSize;
     private String assetHash;
-    private long assetMtime;
+    private Long assetMtime;
     private String relativePath;
     private String status;
-    private long createdAt;
-    private long updatedAt;
+    private Long createdAt;
+    private Long updatedAt;
 }
