@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dto;
+// ViewAsset.java
+package com.cc01cc.project.entity;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author cc01cc
- * @createDate 2025-08-15 0:22
- */
-@Slf4j
 @Data
-public class ArchiveAsset {
-    private Long id;
+public class ViewAsset {
     private Long archiveId;
+    private String archiveName;
+    private String archiveStatus;
+    private Long assetId;
     private String assetName;
     private Long assetSize;
     private String assetHash;
     private Long assetMtime;
-    private String relativePath;
-    private String status;
-    private Long createdAt;
-    private Long updatedAt;
+    private String assetRelativePath;
+    private String assetStatus;
+    private Long fileId;
+    private Long volumeOrder;
 }

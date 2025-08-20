@@ -35,7 +35,7 @@
         </encoder>
         <!-- 生产环境关闭控制台输出 -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${console.level:-INFO}</level>
+            <level>${console.level:-DEBUG}</level>
         </filter>
     </appender>
 
@@ -81,8 +81,11 @@
         <appender-ref ref="ASYNC"/>
     </logger>
 
+    <!-- 测试和调试环境：将项目日志级别设置为DEBUG -->
+    <logger name="com.cc01cc.project" level="DEBUG"/>
+
     <!-- ==================== 根日志配置 ==================== -->
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC"/> <!-- 生产环境可移除CONSOLE -->
     </root>

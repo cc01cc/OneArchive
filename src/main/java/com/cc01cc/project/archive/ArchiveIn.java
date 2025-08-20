@@ -14,19 +14,26 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project;
+package com.cc01cc.project.archive;
 
+import com.cc01cc.project.CommonTool;
+import com.cc01cc.project.DirectoryScanner;
+import com.cc01cc.project.constant.ArchiveStatus;
+import com.cc01cc.project.constant.FileStatus;
+import com.cc01cc.project.constant.FileVolumeAssetStatus;
 import com.cc01cc.project.dao.DatabaseAccessor;
-import com.cc01cc.project.dto.*;
+import com.cc01cc.project.entity.ArchiveMetadata;
+import com.cc01cc.project.entity.FileInfo;
+import com.cc01cc.project.entity.FileVolumeAsset;
+import com.cc01cc.project.entity.ViewFile;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 存档管理器，负责创建和管理存档文件
@@ -34,11 +41,33 @@ import java.util.List;
 @Slf4j
 public class ArchiveIn {
 
+    public static void archive(
+            String rootDir,
+            String dbPath,
+            ArchiveContext context
+    ) throws IOException {
+
+        String dbUrl = "jdbc:sqlite:" + dbPath;
+        DatabaseAccessor databaseAccessor = new DatabaseAccessor(dbUrl);
+
+        // 检查 rootDir 是否已经存在
+        DirectoryScanner.scanAndSaveDirectory(Path.of(rootDir), databaseAccessor);
+//        Long rootId = databaseAccessor.findRootIdByPath(rootDir);
+//        if (rootId == null) {
+//            log.info("根目录 {} 不存在，正在创建...", rootDir);
+//            log.info("根目录 {} 扫描完成, 已创建数据库记录", rootDir);
+//            archiveFileInDb(rootDir, context, databaseAccessor);
+//        } else {
+//            log.info("根目录 {} 已经存在，正在处理...", rootDir);
+//            DirectoryScanner.scanAndUpdateDirectory(Path.of(rootDir), databaseAccessor);
+//            archiveFileInDb(rootDir, context, databaseAccessor);
+//        }
+    }
+
     /**
      * 将指定根目录下的所有文件添加到存档中
      *
-     * @param rootPath         根目录路径
-     * @param archiveDirectory 存档目录路径
+     * @param rootDir          根目录路径
      * @param databaseAccessor 数据库访问器
      * @throws IOException 如果操作过程中发生IO错误
      *                     <p>
@@ -46,31 +75,24 @@ public class ArchiveIn {
      *                     如果文件大小超过存档限制大小，则临时跳过, 最后统一分卷处理大文件
      *                     执行存档
      */
-    public static void archive(
-            String rootPath,
-            String archiveDirectory,
-            long archiveLimitSize,
+    public static void archiveFileInDb(
+            String rootDir,
+            ArchiveContext context,
             DatabaseAccessor databaseAccessor) throws IOException {
-        Path rootAbsolutePath = Path.of(rootPath).toAbsolutePath();
-        // 查找根目录ID
+
+        Path rootAbsolutePath = Path.of(rootDir).toAbsolutePath();
         Long rootId = databaseAccessor.findRootIdByPath(rootAbsolutePath.toString());
         if (rootId == null) {
-            log.error("根目录 {} 不存在于数据库中", rootPath);
+            log.error("根目录 {} 不存在于数据库中", rootDir);
             return;
         }
 
-        // 获取该根目录下的所有文件
-        List<ViewFile> fileList = databaseAccessor.findViewFilesByRootId(rootId);
+        List<ViewFile> fileList = databaseAccessor.findViewFilesWithStatusAndRootId(rootId, FileStatus.UNARCHIVED);
+        if (fileList == null) {
+            log.warn("没有找到根目录 {} 下的文件", rootDir);
+            return;
+        }
         log.info("找到 {} 个文件需要添加到存档", fileList.size());
-
-        // 初始化存档上下文
-        ArchiveContext context = ArchiveContext.builder()
-                .archiveLimitSize(archiveLimitSize)
-                .archiveDirectory(archiveDirectory)
-                .databaseAccessor(databaseAccessor)
-                .archivePrefix("archive")
-                .archiveCounter(1)
-                .build();
 
         try {
             // 遍历文件并添加到存档
@@ -80,7 +102,7 @@ public class ArchiveIn {
             closeTarOutputAndDoneArchive(context.getTarOutput(), context.getArchiveId(), databaseAccessor);
         }
 
-        log.info("所有文件已添加到存档目录 {}", archiveDirectory);
+        log.info("所有文件已添加到存档目录 {}", context.getArchiveDirectory());
     }
 
     static void processFiles(List<ViewFile> fileList, ArchiveContext context) throws IOException {
@@ -98,46 +120,42 @@ public class ArchiveIn {
         }
 
         // 计算文件hash
-        String fileHash = calculateFileHash(filePath);
+        String fileHash = CommonTool.calculateFileHash(filePath);
 
         // 检查是否已存在相同文件
-        FileInfo fileByHash = context.getDatabaseAccessor().findHealthFileByHash(fileHash);
+        List<FileInfo> healthFileListByHash = context.getDatabaseAccessor().findFileByHashAndStatus(fileHash, FileStatus.HEALTH);
 
         List<Long> assetIds;
         FileProcessingStrategy strategy;
-        if (fileByHash == null) {
+        if (healthFileListByHash == null || healthFileListByHash.isEmpty()) {
             // 处理新文件
             strategy = new NewFileProcessingStrategy();
-            assetIds = strategy.process(viewFile, filePath, context);
         } else {
             // 处理已存在的文件
             strategy = new ExistingFileProcessingStrategy();
-            assetIds = strategy.process(viewFile, filePath, context);
         }
+        assetIds = strategy.process(viewFile, filePath, context);
 
         // 创建文件索引
         createFileIndexes(viewFile, assetIds, context);
-        addHashAndMarkFileHealthy(context.getDatabaseAccessor(), viewFile.getFileId(), fileHash);
+        checkHashAndMarkFileHealthy(context.getDatabaseAccessor(), viewFile.getFileId(), fileHash);
 
         log.info("文件 {} 已添加到存档", filePath);
     }
 
-    static void addHashAndMarkFileHealthy(DatabaseAccessor databaseAccessor, Long fileId, String fileHash) {
+    static void checkHashAndMarkFileHealthy(DatabaseAccessor databaseAccessor, Long fileId, String fileHash) {
         // 添加 hash，更新文件状态为健康
         FileInfo fileInfo = databaseAccessor.findFileInfoById(fileId);
-        fileInfo.setStatus("HEALTH");
-        fileInfo.setHash(fileHash);
+        fileInfo.setStatus(FileStatus.HEALTH);
+        if (!Objects.equals(fileHash, fileInfo.getHash())) {
+            log.warn("文件 {} 的 hash 不一致，请检查", fileInfo.getName());
+        }
         fileInfo.setUpdatedAt(System.currentTimeMillis() / 1000);
 
         // 更新数据库
         databaseAccessor.updateFileInfo(fileInfo);
     }
 
-    private static String calculateFileHash(Path filePath) throws IOException {
-        try (InputStream fis = Files.newInputStream(filePath)) {
-            return DigestUtils.sha256Hex(fis);
-        }
-    }
 
     private static void createFileIndexes(ViewFile viewFile, List<Long> assetIds, ArchiveContext context) throws IOException {
         long volumeOrder = 1;
@@ -146,13 +164,12 @@ public class ArchiveIn {
             FileVolumeAsset fileVolumeAsset = new FileVolumeAsset();
             fileVolumeAsset.setFileId(viewFile.getFileId());
             fileVolumeAsset.setAssetId(assetId);
-            fileVolumeAsset.setStatus("HEALTH");
+            fileVolumeAsset.setStatus(FileVolumeAssetStatus.HEALTH);
             fileVolumeAsset.setVolumeOrder(volumeOrder++);
 
             context.getDatabaseAccessor().insertFileVolumeAsset(fileVolumeAsset);
         }
     }
-
 
     static void closeTarOutputAndDoneArchive(TarArchiveOutputStream tarOutput, Long archiveId, DatabaseAccessor databaseAccessor) {
         if (tarOutput != null) {
@@ -172,7 +189,7 @@ public class ArchiveIn {
     }
 
     private static void doneArchive(DatabaseAccessor databaseAccessor, ArchiveMetadata archiveMetadataById) {
-        archiveMetadataById.setStatus("HEALTH");
+        archiveMetadataById.setStatus(ArchiveStatus.HEALTH);
         archiveMetadataById.setUpdatedAt(System.currentTimeMillis() / 1000);
         databaseAccessor.updateArchiveMetadata(archiveMetadataById);
     }

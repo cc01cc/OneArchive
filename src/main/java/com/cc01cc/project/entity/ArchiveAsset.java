@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-// ViewFile.java
-package com.cc01cc.project.dto;
+package com.cc01cc.project.entity;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @author cc01cc
+ * @createDate 2025-08-15 0:22
+ */
+@Slf4j
 @Data
-public class ViewFile {
-    private Long rootId;
-    private String rootPath;
-    private String rootStatus;
-    private Long directoryId;
-    private String directoryPath;
-    private Long directoryMtime;
-    private String directoryStatus;
-    private Long fileId;
-    private String fileName;
-    private Long fileSize;
-    private Long fileMtime;
-    private String fileHash;
-    private Long volumeCount;
-    private String fileStatus;
+public class ArchiveAsset {
+    private Long id;
+    private Long archiveId;
+    private String assetName;
+    private Long assetSize;
+    private String assetHash;
+    private Long assetMtime;
+    private String relativePath;
+    private String status;
+    private Long createdAt;
+    private Long updatedAt;
 }

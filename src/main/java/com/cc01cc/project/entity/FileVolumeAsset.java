@@ -14,26 +14,18 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dto;
+package com.cc01cc.project.entity;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author cc01cc
- * @createDate 2025-08-14 1:19
- */
 @Data
 @Slf4j
-public class ArchiveMetadata {
+public class FileVolumeAsset {
     private Long id;
-    private String name;
-    private Long archiveLimitSize;
-    private String archiveHash;
-    private Integer isCompressed = 0;
-    private String compressedAlgorithm;
-    private Integer isEncrypted = 0;
-    private String encryptionAlgorithm;
+    private Long fileId;
+    private Long assetId;
+    private Long volumeOrder;
     private String status;
     private Long createdAt;
     private Long updatedAt;

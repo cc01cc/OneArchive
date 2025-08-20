@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project;
+package com.cc01cc.project.archive;
 
+import com.cc01cc.project.constant.ArchiveStatus;
+import com.cc01cc.project.constant.AssetStatus;
 import com.cc01cc.project.dao.DatabaseAccessor;
-import com.cc01cc.project.dto.ArchiveAsset;
-import com.cc01cc.project.dto.ArchiveContext;
-import com.cc01cc.project.dto.ArchiveMetadata;
-import com.cc01cc.project.dto.ViewFile;
+import com.cc01cc.project.entity.ArchiveAsset;
+import com.cc01cc.project.entity.ArchiveMetadata;
+import com.cc01cc.project.entity.ViewFile;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -96,7 +97,7 @@ class NewFileProcessingStrategy implements FileProcessingStrategy {
             newAsset.setAssetMtime(viewFile.getFileMtime());
             newAsset.setRelativePath(hash);
             newAsset.setArchiveId(context.getArchiveId());
-            newAsset.setStatus("WAIT_TO_ARCHIVE");
+            newAsset.setStatus(AssetStatus.UNARCHIVED);
             // 插入资产
             long assetId = context.getDatabaseAccessor().insertArchiveAsset(newAsset);
 
@@ -171,7 +172,7 @@ class NewFileProcessingStrategy implements FileProcessingStrategy {
 
         metadata.setName(context.getCurrentArchiveFile().getFileName().toString());
         metadata.setArchiveLimitSize(context.getArchiveLimitSize());
-        metadata.setStatus("WAIT_TO_ARCHIVE");
+        metadata.setStatus(ArchiveStatus.UNCOMPLETED);
 
         long archiveId = context.getDatabaseAccessor().insertArchiveMetadata(metadata);
         context.setArchiveId(archiveId);
@@ -179,13 +180,13 @@ class NewFileProcessingStrategy implements FileProcessingStrategy {
     }
 
     private void markArchiveAsHealthy(DatabaseAccessor databaseAccessor, ArchiveMetadata archiveMetadata) {
-        archiveMetadata.setStatus("HEALTH");
+        archiveMetadata.setStatus(ArchiveStatus.HEALTH);
         archiveMetadata.setUpdatedAt(System.currentTimeMillis() / 1000);
         databaseAccessor.updateArchiveMetadata(archiveMetadata);
     }
 
     private void markAssetAsHealthy(DatabaseAccessor databaseAccessor, ArchiveAsset asset) {
-        asset.setStatus("HEALTH");
+        asset.setStatus(AssetStatus.HEALTH);
         asset.setUpdatedAt(System.currentTimeMillis() / 1000);
         databaseAccessor.updateArchiveAsset(asset);
     }

@@ -14,20 +14,9 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dto;
+package com.cc01cc.project.constant;
 
-import lombok.Data;
-
-@Data
-public class FileInfo {
-    private Long id;
-    private Long directoryId;
-    private String name;
-    private Long size;
-    private Long mtime;
-    private String hash;
-    private int volumeCount = 1;
-    private String status;
-    private Long createdAt;
-    private Long updatedAt;
+public class AssetStatus {
+    public static final String HEALTH = "HEALTH";
+    public static final String UNARCHIVED = "UNARCHIVED";
 }

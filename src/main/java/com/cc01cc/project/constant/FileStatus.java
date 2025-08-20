@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dto;
+package com.cc01cc.project.constant;
 
-import lombok.Data;
+public class FileStatus {
+    public static final String HEALTH = "HEALTH";
+    public static final String UNARCHIVED = "UNARCHIVED";
+    public static final String WAIT_TO_DELETE = "WAIT_TO_DELETE";
 
-@Data
-public class FileVolume {
-    private Long id;
-    private Long fileId;
-    private Long volumeCount;
-    private String relativePath;
-    private String status;
-    private Long createdAt;
-    private Long updatedAt;
 }

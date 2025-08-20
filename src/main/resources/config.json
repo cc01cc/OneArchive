@@ -1,0 +1,18 @@
+{
+  "rootDir": "W:\\zeolab\\w05-P",
+  "sqlitePath": "one_archive.sqlite",
+  "archive": {
+    "directory": "W:\\zeolab\\test-archive",
+    "limitSize": 1073741824,
+    "prefix": "archive"
+  },
+  "unarchive": {
+    "directory": "W:\\zeolab\\test-unarchive"
+  },
+  "processing": {
+    "calcHash": true
+  },
+  "archivedRootDir": [
+    "W:\\zeolab\\w05-P"
+  ]
+}

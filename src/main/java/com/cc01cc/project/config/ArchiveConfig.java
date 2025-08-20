@@ -14,19 +14,36 @@
  * limitations under the License.
  */
 
-// FileProcessingStrategy.java
-package com.cc01cc.project;
+package com.cc01cc.project.config;
 
-import com.cc01cc.project.dto.ArchiveContext;
-import com.cc01cc.project.dto.ViewFile;
+import lombok.Data;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 
-public interface FileProcessingStrategy {
-    List<Long> process(ViewFile viewFile, Path filePath, ArchiveContext context) throws IOException;
+@Data
+public class ArchiveConfig {
+    private String rootDir;
+    private String sqlitePath;
+    private Archive archive;
+    private Unarchive unarchive;
+    private Processing processing;
+    private List<String> archivedRootDir;
+
+
+    @Data
+    public static class Archive {
+        private String directory;
+        private long limitSize;
+        private String prefix;
+    }
+
+    @Data
+    public static class Unarchive {
+        private String directory;
+    }
+
+    @Data
+    public static class Processing {
+        private boolean calcHash;
+    }
 }
-
-
-

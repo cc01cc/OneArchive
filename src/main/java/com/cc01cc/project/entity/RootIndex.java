@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dto;
+package com.cc01cc.project.entity;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 @Data
-@Slf4j
-public class FileVolumeAsset {
+public class RootIndex {
     private Long id;
-    private Long fileId;
-    private Long assetId;
-    private Long volumeOrder;
+    private String rootPath;
     private String status;
     private Long createdAt;
     private Long updatedAt;

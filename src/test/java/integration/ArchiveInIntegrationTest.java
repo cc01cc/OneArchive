@@ -17,9 +17,11 @@
 // ArchiveInIntegrationTest.java
 package integration;
 
-import com.cc01cc.project.ArchiveIn;
-import com.cc01cc.project.ArchiveOut;
 import com.cc01cc.project.DirectoryScanner;
+import com.cc01cc.project.archive.ArchiveContext;
+import com.cc01cc.project.archive.ArchiveCore;
+import com.cc01cc.project.archive.ArchiveIn;
+import com.cc01cc.project.archive.ArchiveOut;
 import com.cc01cc.project.dao.DatabaseAccessor;
 import com.cc01cc.project.dao.DatabaseInitializer;
 import org.junit.jupiter.api.*;
@@ -32,6 +34,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,7 +42,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ArchiveInIntegrationTest {
 
-    private static final String TEST_DB_URL = "jdbc:sqlite:test_archive.sqlite";
+    private static final String TEST_DB_PATH = "test_archive.sqlite";
+    private static final String TEST_DB_URL = "jdbc:sqlite:" + TEST_DB_PATH;
     private static final String TEST_SOURCE_DIR = "test-source";
     private static final String TEST_ARCHIVE_DIR = "test-archive";
     private static final String TEST_RESTORE_DIR = "test-restore";
@@ -213,15 +217,22 @@ class ArchiveInIntegrationTest {
 
     @Test
     @Order(2)
-    void testFullArchiveProcess() throws Exception {
+    void testFullArchiveFileInDbProcess() throws Exception {
+        ArchiveContext context = ArchiveContext.builder()
+                .archiveLimitSize(512L * 1024L)
+                .archiveDirectory(TEST_ARCHIVE_DIR)
+                .databaseAccessor(databaseAccessor)
+                .archivePrefix("archive")
+                .archiveCounter(1)
+                .build();
         // 2. 执行存档 (使用较小的存档限制来强制分卷)
-        ArchiveIn.archive(TEST_SOURCE_DIR, TEST_ARCHIVE_DIR, 512L * 1024L, databaseAccessor); // 512KB限制
+        ArchiveIn.archiveFileInDb(TEST_SOURCE_DIR, context, databaseAccessor); // 512KB限制
 
         // 3. 验证数据库记录
         assertDatabaseRecords();
 
         // 4. 验证存档文件
-        assertArchiveFiles();
+        assertArchiveFileInDbFiles();
 
         // 5. 验证分卷功能
         assertVolumeProcessing();
@@ -263,7 +274,7 @@ class ArchiveInIntegrationTest {
         }
     }
 
-    private void assertArchiveFiles() throws IOException {
+    private void assertArchiveFileInDbFiles() throws IOException {
         Path archiveDir = Path.of(TEST_ARCHIVE_DIR);
         assertTrue(Files.exists(archiveDir), "存档目录应该存在");
 
@@ -290,7 +301,7 @@ class ArchiveInIntegrationTest {
 
     @Test
     @Order(3)
-    void testArchiveAndRestore() throws IOException {
+    void testArchiveFileInDbAndRestore() throws IOException {
         // 1. 解档
         ArchiveOut.unArchive(TEST_SOURCE_DIR, TEST_ARCHIVE_DIR, TEST_RESTORE_DIR, databaseAccessor);
 
@@ -397,5 +408,19 @@ class ArchiveInIntegrationTest {
             restoredChannel.read(ByteBuffer.wrap(restoredBuffer));
             assertArrayEquals(originalBuffer, restoredBuffer, "大文件结尾内容应该一致");
         }
+    }
+
+    @Test
+    @Order(4)
+    void testGetRootDirList() throws IOException {
+
+        // 调用getRootDirList方法
+        List<String> rootDirs = ArchiveCore.getRootDirList(TEST_DB_PATH);
+
+        // 验证结果
+        assertNotNull(rootDirs, "根目录列表不应为null");
+        assertFalse(rootDirs.isEmpty(), "根目录列表不应为空");
+        assertTrue(rootDirs.contains(Path.of(TEST_SOURCE_DIR).toAbsolutePath().toString()),
+                "根目录列表应包含测试源目录");
     }
 }

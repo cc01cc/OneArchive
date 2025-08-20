@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project;
+package com.cc01cc.project.archive;
 
-import com.cc01cc.project.dto.ArchiveContext;
-import com.cc01cc.project.dto.FileInfo;
-import com.cc01cc.project.dto.FileVolumeAsset;
-import com.cc01cc.project.dto.ViewFile;
+import com.cc01cc.project.constant.FileStatus;
+import com.cc01cc.project.entity.FileInfo;
+import com.cc01cc.project.entity.FileVolumeAsset;
+import com.cc01cc.project.entity.ViewFile;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.IOException;
@@ -34,7 +34,7 @@ class ExistingFileProcessingStrategy implements FileProcessingStrategy {
     @Override
     public List<Long> process(ViewFile viewFile, Path filePath, ArchiveContext context) throws IOException {
         // 对于已存在的文件，我们只需要获取其关联的资产ID
-        FileInfo fileByHash = context.getDatabaseAccessor().findHealthFileByHash(calculateFileHash(filePath));
+        FileInfo fileByHash = context.getDatabaseAccessor().findFileByHashAndStatus(calculateFileHash(filePath), FileStatus.HEALTH).getFirst();
         List<FileVolumeAsset> fileVolumeAssets = context.getDatabaseAccessor()
                 .findFileVolumeAssetByFileId(fileByHash.getId());
 

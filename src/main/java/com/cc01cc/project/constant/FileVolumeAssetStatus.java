@@ -14,23 +14,9 @@
  * limitations under the License.
  */
 
-// ViewAsset.java
-package com.cc01cc.project.dto;
+package com.cc01cc.project.constant;
 
-import lombok.Data;
-
-@Data
-public class ViewAsset {
-    private Long archiveId;
-    private String archiveName;
-    private String archiveStatus;
-    private Long assetId;
-    private String assetName;
-    private Long assetSize;
-    private String assetHash;
-    private Long assetMtime;
-    private String assetRelativePath;
-    private String assetStatus;
-    private Long fileId;
-    private Long volumeOrder;
+public class FileVolumeAssetStatus {
+    public static final String HEALTH = "HEALTH";
+    public static final String UNARCHIVED = "UNARCHIVED";
 }

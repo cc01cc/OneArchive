@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dto;
+package com.cc01cc.project.archive;
 
 import com.cc01cc.project.dao.DatabaseAccessor;
 import lombok.Builder;

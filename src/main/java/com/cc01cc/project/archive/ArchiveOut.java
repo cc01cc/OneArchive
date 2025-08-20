@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project;
+package com.cc01cc.project.archive;
 
 import com.cc01cc.project.dao.DatabaseAccessor;
-import com.cc01cc.project.dto.ViewAsset;
-import com.cc01cc.project.dto.ViewFile;
+import com.cc01cc.project.entity.ViewAsset;
+import com.cc01cc.project.entity.ViewFile;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
+
 
 /**
  * 解档
@@ -45,13 +46,11 @@ public class ArchiveOut {
      * @param unarchiveTargetPath
      */
     public static void unArchive(String rootDir, String archiveDir, String unarchiveTargetPath, DatabaseAccessor databaseAccessor) {
-        Path rootAbsolutePath = Path.of(rootDir).toAbsolutePath();
-        Long rootId = databaseAccessor.findRootIdByPath(rootAbsolutePath.toString());
-        if (rootId == null) {
-            log.error("根目录 {} 不存在于数据库中", rootDir);
+        List<ViewFile> viewFileList = ArchiveCore.getViewFileList(rootDir, databaseAccessor);
+        if (viewFileList == null) {
+            log.warn("没有找到根目录 {} 下的文件", rootDir);
             return;
         }
-        List<ViewFile> viewFileList = databaseAccessor.findViewFilesByRootId(rootId);
         log.info("找到 {} 个文件需要解压", viewFileList.size());
 
         for (ViewFile viewFile : viewFileList) {
@@ -63,6 +62,7 @@ public class ArchiveOut {
         }
 
     }
+
 
     private static void unArchiveFile(ViewFile viewFile, String archiveDir, String unarchiveTargetPath, DatabaseAccessor databaseAccessor) throws IOException {
         // 获取文件关联的资产信息

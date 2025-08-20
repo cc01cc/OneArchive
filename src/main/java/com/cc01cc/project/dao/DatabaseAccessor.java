@@ -16,8 +16,10 @@
 
 package com.cc01cc.project.dao;
 
-import com.cc01cc.project.dto.*;
+import com.cc01cc.project.entity.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -31,9 +33,13 @@ import java.util.List;
 public class DatabaseAccessor {
 
     private final String dbUrl;
+    private final Jdbi jdbi;
 
     public DatabaseAccessor(String dbUrl) {
         this.dbUrl = dbUrl;
+        this.jdbi = Jdbi.create(dbUrl);
+        // 注册SqlObjectPlugin插件以支持DAO接口
+        this.jdbi.installPlugin(new SqlObjectPlugin());
         // 测试数据库连接
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             if (conn != null) {
@@ -90,42 +96,14 @@ public class DatabaseAccessor {
         return -1;
     }
 
-    /**
-     * 插入目录信息到 directory_index 表
-     *
-     * @param directoryInfo 目录信息
-     * @return 插入记录的ID
-     */
-    public long insertDirectory(DirectoryInfo directoryInfo) {
-        String sql = """
-                INSERT INTO directory_index(root_id, directory_name, directory_mtime, directory_path, status, created_at, updated_at)
-                VALUES (?, ?, ?, ?, 'HEALTH', strftime('%s', 'now'), strftime('%s', 'now'))
-                """;
-
-        try (
-                Connection conn = getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            pstmt.setLong(1, directoryInfo.getRootId());
-            pstmt.setString(2, directoryInfo.getName());
-            pstmt.setLong(3, directoryInfo.getMtime());
-            pstmt.setString(4, directoryInfo.getPath());
-
-            int affectedRows = pstmt.executeUpdate();
-
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        long id = generatedKeys.getLong(1);
-                        log.info("插入目录信息成功，ID: {}", id);
-                        return id;
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            log.error("插入目录信息时发生错误", e);
-        }
-        return -1;
+    private static RootIndex toRootIndex(ResultSet rs) throws SQLException {
+        RootIndex rootIndex = new RootIndex();
+        rootIndex.setId(rs.getLong("id"));
+        rootIndex.setRootPath(rs.getString("root_path"));
+        rootIndex.setStatus(rs.getString("status"));
+        rootIndex.setCreatedAt(rs.getLong("created_at"));
+        rootIndex.setUpdatedAt(rs.getLong("updated_at"));
+        return rootIndex;
     }
 
     /**
@@ -136,8 +114,8 @@ public class DatabaseAccessor {
      */
     public long insertFile(FileInfo fileInfo) {
         String sql = """
-                INSERT INTO file_index(directory_id, file_name, file_size, file_mtime, file_hash, volume_count, status, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%s', 'now'), strftime('%s', 'now'))
+                INSERT INTO file_index(directory_id, file_name, file_size, file_mtime, file_hash,  status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?,  strftime('%s', 'now'), strftime('%s', 'now'))
                 """;
 
         try (
@@ -149,8 +127,7 @@ public class DatabaseAccessor {
             pstmt.setLong(3, fileInfo.getSize());
             pstmt.setLong(4, fileInfo.getMtime());
             pstmt.setString(5, fileInfo.getHash());
-            pstmt.setLong(6, fileInfo.getVolumeCount());
-            pstmt.setString(7, fileInfo.getStatus());
+            pstmt.setString(6, fileInfo.getStatus());
 
             int affectedRows = pstmt.executeUpdate();
 
@@ -370,52 +347,12 @@ public class DatabaseAccessor {
      * @param rootId 根目录ID
      * @return 文件信息列表
      */
-    public List<FileInfo> findFilesByRootId(long rootId) {
-        String sql = """
-                SELECT 
-                    f.id as file_id,
-                    f.file_name,
-                    f.file_size,
-                    f.file_mtime,
-                    f.file_hash,
-                    f.directory_id,
-                    f.volume_count,
-                    d.directory_path,
-                    r.root_path
-                FROM file_index f
-                JOIN directory_index d ON f.directory_id = d.id
-                JOIN root_index r ON d.root_id = r.id
-                WHERE r.id = ? AND f.status = 'HEALTH'
-                """;
+    public List<FileInfo> findFilesByStatusRootId(long rootId, String status) {
+        return jdbi.withExtension(CommonDao.class, dao -> dao.findFilesByRootId(rootId, status));
+    }
 
-        List<FileInfo> files = new ArrayList<>();
-        try (
-                Connection conn = getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, rootId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    FileInfo fileInfo = new FileInfo();
-                    fileInfo.setId(rs.getLong("id"));
-                    fileInfo.setDirectoryId(rs.getLong("directory_id"));
-                    fileInfo.setName(rs.getString("file_name"));
-                    fileInfo.setSize(rs.getLong("file_size"));
-                    fileInfo.setMtime(rs.getLong("file_mtime"));
-                    fileInfo.setHash(rs.getString("file_hash"));
-                    fileInfo.setVolumeCount(rs.getInt("volume_count"));
-                    fileInfo.setStatus(rs.getString("status"));
-                    fileInfo.setCreatedAt(rs.getLong("created_at"));
-                    fileInfo.setUpdatedAt(rs.getLong("updated_at"));
-
-                    files.add(fileInfo);
-                }
-            }
-        } catch (SQLException e) {
-            log.error("查询根目录下的文件时发生错误", e);
-        }
-        return files;
+    public List<DirectoryInfo> findDirectoriesByStatusAndRootId(long rootId, String status) {
+        return jdbi.withExtension(CommonDao.class, dao -> dao.findDirectoriesByRootId(rootId, status));
     }
 
     /**
@@ -483,35 +420,20 @@ public class DatabaseAccessor {
         return null;
     }
 
-    public FileInfo findHealthFileByHash(String fileHash) {
-
-        String sql = "SELECT * FROM file_index WHERE file_hash = ?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, fileHash);
-
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    FileInfo fileInfo = new FileInfo();
-                    fileInfo.setId(rs.getLong("id"));
-                    fileInfo.setDirectoryId(rs.getLong("directory_id"));
-                    fileInfo.setName(rs.getString("file_name"));
-                    fileInfo.setSize(rs.getLong("file_size"));
-                    fileInfo.setMtime(rs.getLong("file_mtime"));
-                    fileInfo.setHash(rs.getString("file_hash"));
-                    fileInfo.setVolumeCount(rs.getInt("volume_count"));
-                    fileInfo.setStatus(rs.getString("status"));
-                    fileInfo.setCreatedAt(rs.getLong("created_at"));
-                    fileInfo.setUpdatedAt(rs.getLong("updated_at"));
-                    return fileInfo;
-                }
-            }
-        } catch (SQLException e) {
-            log.error("查询文件时发生错误", e);
+    /**
+     * 根据文件哈希和状态查找文件
+     *
+     * @param fileHash 文件哈希值
+     * @param status   文件状态
+     * @return 文件信息，如果未找到返回null
+     */
+    public List<FileInfo> findFileByHashAndStatus(String fileHash, String status) {
+        try {
+            return jdbi.withExtension(CommonDao.class, dao -> dao.findFileByHashAndStatus(fileHash, status));
+        } catch (Exception e) {
+            log.error("根据哈希值和状态查询文件时发生错误", e);
+            return null;
         }
-        return null;
     }
 
     public List<FileVolumeAsset> findFileVolumeAssetByFileId(long id) {
@@ -564,7 +486,6 @@ public class DatabaseAccessor {
                     file.setFileSize(rs.getLong("file_size"));
                     file.setFileMtime(rs.getLong("file_mtime"));
                     file.setFileHash(rs.getString("file_hash"));
-                    file.setVolumeCount(rs.getLong("volume_count"));
                     file.setFileStatus(rs.getString("file_status"));
 
                     files.add(file);
@@ -648,25 +569,11 @@ public class DatabaseAccessor {
     }
 
     public void updateFileInfo(FileInfo fileInfo) {
-        try (Connection connection = getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(
-                     "UPDATE file_index SET id = ?, directory_id = ?,file_hash = ?, file_name=?, file_size =?, file_mtime =?, status = ?, updated_at = ? WHERE id = ?"
-             )) {
-            preparedStatement.setLong(1, fileInfo.getId());
-            preparedStatement.setLong(2, fileInfo.getDirectoryId());
-            preparedStatement.setString(3, fileInfo.getHash());
-            preparedStatement.setString(4, fileInfo.getName());
-            preparedStatement.setLong(5, fileInfo.getSize());
-            preparedStatement.setLong(6, fileInfo.getMtime());
-            preparedStatement.setString(7, fileInfo.getStatus());
-            preparedStatement.setLong(8, fileInfo.getUpdatedAt());
-            preparedStatement.setLong(9, fileInfo.getId());
-            preparedStatement.executeUpdate();
-
-        } catch (SQLException e) {
+        try {
+            jdbi.withExtension(CommonDao.class, dao -> dao.updateFileInfo(fileInfo));
+        } catch (Exception e) {
             log.error("更新文件信息时发生错误", e);
         }
-
     }
 
     public FileInfo findFileInfoById(Long fileId) {
@@ -682,7 +589,6 @@ public class DatabaseAccessor {
                     fileInfo.setSize(rs.getLong("file_size"));
                     fileInfo.setMtime(rs.getLong("file_mtime"));
                     fileInfo.setHash(rs.getString("file_hash"));
-                    fileInfo.setVolumeCount(rs.getInt("volume_count"));
                     fileInfo.setStatus(rs.getString("status"));
                     fileInfo.setCreatedAt(rs.getLong("created_at"));
                     fileInfo.setUpdatedAt(rs.getLong("updated_at"));
@@ -693,5 +599,79 @@ public class DatabaseAccessor {
             log.error("查询文件信息时发生错误", e);
         }
         return null;
+    }
+
+    /**
+     * 插入目录信息到 directory_index 表
+     *
+     * @param directoryInfo 目录信息
+     * @return 插入记录的ID
+     */
+    public long insertDirectory(DirectoryInfo directoryInfo) {
+        try {
+            return jdbi.withExtension(CommonDao.class, dao -> dao.insertDirectory(directoryInfo));
+        } catch (Exception e) {
+            log.error("插入参数: {}", directoryInfo);
+            log.error("插入目录信息时发生错误", e);
+            return -1;
+        }
+    }
+
+    public List<RootIndex> getHealthRootDirList() {
+        String sql = "SELECT * FROM root_index WHERE status = 'HEALTH'";
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<RootIndex> rootDirList = new ArrayList<>();
+                while (rs.next()) {
+                    RootIndex rootIndex = toRootIndex(rs);
+                    rootDirList.add(rootIndex);
+                }
+                return rootDirList;
+            }
+        } catch (SQLException e) {
+            log.error("查询根目录信息时发生错误", e);
+        }
+        return null;
+    }
+
+    public List<ViewFile> findViewFilesWithStatusAndRootId(Long rootId, String status) {
+        return jdbi.withExtension(CommonDao.class, dao -> dao.findViewFilesWithStatusAndRootId(rootId, status));
+    }
+
+    public RootIndex findRootInfoByPath(String rootAbsolutePath) {
+
+        String sql = "SELECT * FROM root_index WHERE root_path = ?";
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, rootAbsolutePath);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return toRootIndex(rs);
+                }
+            }
+        } catch (SQLException e) {
+            log.error("查询根目录信息时发生错误", e);
+        }
+        return null;
+    }
+
+
+    public void updateStatusById(String tableName, Long id, String status) {
+        jdbi.withExtension(CommonDao.class, dao -> dao.updateStatusById(tableName, id, status));
+    }
+
+    public int[] batchUpdateStatusById(String tableName, List<Long> ids, String status) {
+        return jdbi.withExtension(CommonDao.class, dao -> dao.batchUpdateStatusById(tableName, ids, status));
+    }
+
+    /**
+     * 更新目录信息
+     *
+     * @param directoryInfo 目录信息
+     * @return 更新记录数
+     */
+    public int updateDirectory(DirectoryInfo directoryInfo) {
+        return jdbi.withExtension(CommonDao.class, dao -> dao.updateDirectory(directoryInfo));
     }
 }

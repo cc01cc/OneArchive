@@ -117,7 +117,6 @@ public class DatabaseInitializer {
                     file_size INTEGER NOT NULL DEFAULT 0,
                     file_mtime INTEGER NOT NULL DEFAULT 0,
                     file_hash TEXT,
-                    volume_count INTEGER ,
                     status TEXT NOT NULL DEFAULT 'HEALTH',
                     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
                     updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -199,7 +198,6 @@ public class DatabaseInitializer {
                     f.file_size,
                     f.file_mtime,
                     f.file_hash,
-                    f.volume_count,
                     f.status as file_status
                 FROM root_index r
                 JOIN directory_index d ON r.id = d.root_id

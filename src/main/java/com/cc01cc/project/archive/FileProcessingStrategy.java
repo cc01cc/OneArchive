@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-package com.cc01cc.project.dto;
+// FileProcessingStrategy.java
+package com.cc01cc.project.archive;
 
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import com.cc01cc.project.entity.ViewFile;
 
-/**
- * @author cc01cc
- * @createDate 2025-08-13 3:07
- */
-@Data
-@Slf4j
-public class DirectoryInfo {
-    private String status;
-    private Long createdAt;
-    private Long updatedAt;
-    private Long id;
-    private Long rootId;
-    private String name;
-    private Long mtime;
-    private String path;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
+public interface FileProcessingStrategy {
+    List<Long> process(ViewFile viewFile, Path filePath, ArchiveContext context) throws IOException;
 }
+
+
+
