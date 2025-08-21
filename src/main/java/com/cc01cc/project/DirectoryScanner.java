@@ -181,32 +181,6 @@ public class DirectoryScanner {
         });
     }
 
-//    /**
-//     * 扫描资源和写入资源一起执行, 每扫描到一个资源, 就写入数据库, 避免内存溢出
-//     *
-//     * @param startPath        起始路径
-//     * @param databaseAccessor 数据库访问器
-//     * @throws IOException 如果扫描过程中发生IO错误
-//     */
-//    public static void scanAndSaveDirectory(Path startPath, DatabaseAccessor databaseAccessor) throws IOException {
-//        scanAndSaveDirectory(startPath, databaseAccessor, false);
-//    }
-//
-//    /**
-//     * 扫描目录并更新数据库
-//     * <p>
-//     * 1. 将 rootPath 标记为 更新中
-//     * 2. 将所有 dir 以及 file 标记为 待删除
-//     * 3. 扫描目录, 已经存在的子目录更新mtime 然后标记为 HEALTH, 已存在的文件标记为HEALTH; 新的文件标记为 未存档
-//     *
-//     * @param rootDir          根目录路径
-//     * @param databaseAccessor 数据库访问器
-//     * @throws IOException 如果扫描过程中发生IO错误
-//     */
-//    public static void scanAndUpdateDirectory(Path rootDir, DatabaseAccessor databaseAccessor) throws IOException {
-//        scanAndSaveDirectory(rootDir, databaseAccessor, true);
-//    }
-
     /**
      * 扫描目录但不写入数据库，仅返回目录统计信息
      *

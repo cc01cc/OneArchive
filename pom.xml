@@ -21,9 +21,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.cc01cc.project</groupId>
-    <artifactId>OneArchive</artifactId>
+    <artifactId>one-archive-core</artifactId>
     <version>1.0-SNAPSHOT</version>
-
+    <name>OneArchive Core</name>
+    <description>
+        OneArchive核心库，提供文件归档和解档功能
+    </description>
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>

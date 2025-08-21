@@ -16,8 +16,7 @@
 
 package com.cc01cc.project;
 
-import com.cc01cc.project.archive.ArchiveContext;
-import com.cc01cc.project.config.ArchiveConfig;
+import com.cc01cc.project.archive.ArchiveService;
 import com.cc01cc.project.config.ConfigManager;
 import com.cc01cc.project.dao.DatabaseAccessor;
 import com.cc01cc.project.dao.DatabaseInitializer;
@@ -27,48 +26,63 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
+ * OneArchive核心库入口类
+ * 提供归档和解档的核心功能API
+ *
  * @author cc01cc
- * @createDate 2025-07-21 21:41
  */
-
 @Slf4j
 public class OneArchive {
-    public static void main(String[] args) throws IOException {
-        log.info("Hello, World!");
 
-        // 从配置文件加载参数
-        ArchiveConfig config = ConfigManager.loadConfig();
-
-        DirectoryStatistics directoryStatistics = DirectoryScanner.scanDirectoryOnly(Path.of(config.getRootDir()));
-        log.info("目录统计结果: {}", directoryStatistics);
-
-        String dbUrl = "jdbc:sqlite:" + config.getSqlitePath();
-        String testRootDir = config.getRootDir();
-        String testArchiveDir = config.getArchive().getDirectory();
-        String testUnArchiveDir = config.getUnarchive().getDirectory();
-        long archiveLimitSize = config.getArchive().getLimitSize();
-
-        // 初始化数据库
+    /**
+     * 初始化数据库
+     *
+     * @param dbUrl 数据库URL
+     * @return DatabaseInitializer实例
+     */
+    public static DatabaseInitializer initializeDatabase(String dbUrl) {
         DatabaseInitializer dbInitializer = new DatabaseInitializer(dbUrl);
         dbInitializer.initializeDatabase();
-
-        DatabaseAccessor databaseAccessor = new DatabaseAccessor(dbUrl);
-
-        // 扫描目录并保存到数据库
-        DirectoryScanner.scanAndSaveDirectory(Path.of(testRootDir), databaseAccessor);
-
-//        // 添加文件到tar文件
-//        ArchiveIn.archive(testRootDir, testArchiveDir, archiveLimitSize, databaseAccessor);
-//
-//        // 解档文件
-//        ArchiveOut.unArchive(testRootDir, testArchiveDir, testUnArchiveDir, databaseAccessor);
-        // 初始化存档上下文
-        ArchiveContext context = ArchiveContext.builder()
-                .archiveLimitSize(archiveLimitSize)
-                .archiveDirectory(testArchiveDir)
-                .databaseAccessor(databaseAccessor)
-                .archivePrefix("archive")
-                .archiveCounter(1)
-                .build();
+        return dbInitializer;
     }
+
+    /**
+     * 创建数据库访问器
+     *
+     * @param dbUrl 数据库URL
+     * @return DatabaseAccessor实例
+     */
+    public static DatabaseAccessor createDatabaseAccessor(String dbUrl) {
+        return new DatabaseAccessor(dbUrl);
+    }
+
+    /**
+     * 扫描目录并保存到数据库
+     *
+     * @param rootPath         根目录路径
+     * @param databaseAccessor 数据库访问器
+     * @throws IOException IO异常
+     */
+    public static void scanAndSaveDirectory(Path rootPath, DatabaseAccessor databaseAccessor) throws IOException {
+        DirectoryScanner.scanAndSaveDirectory(rootPath, databaseAccessor);
+    }
+
+    /**
+     * 获取归档服务实例
+     *
+     * @return ArchiveService实例
+     */
+    public static ArchiveService getArchiveService() {
+        return new ArchiveService();
+    }
+
+    /**
+     * 获取配置管理器实例
+     *
+     * @return ConfigManager实例
+     */
+    public static ConfigManager getConfigManager() {
+        return new ConfigManager();
+    }
+
 }

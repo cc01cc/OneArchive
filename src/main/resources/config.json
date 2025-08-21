@@ -1,6 +1,6 @@
 {
-  "rootDir": "W:\\zeolab\\w05-P",
-  "sqlitePath": "one_archive.sqlite",
+  "rootDir": "W:\\zeolab\\vite-project",
+  "sqlitePath": "vite-project-archive.sqlite",
   "archive": {
     "directory": "W:\\zeolab\\test-archive",
     "limitSize": 1073741824,
