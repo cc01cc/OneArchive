@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/src/main/java/com/cc01cc/onearchive/core/dao/CommonDao.java" value="3a2edfeb-a625-4745-9b8c-3a47d1efb89a" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/cc01cc/onearchive/core/dao/DatabaseAccessor.java" value="5d26d8c6-04ef-42e2-8029-c15a862cf283" />
+  </component>
+</project>
