@@ -1,0 +1,16 @@
+### 测试获取所有根目录
+GET http://localhost:52101/api/info-roots
+Accept: application/json
+
+### 测试存档
+POST http://localhost:52101/api/v1/archive
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "rootDir": "W:\\zeolab\\w05-P",
+  "archiveDir": "W:\\zeolab\\w05-Archive",
+  "archivePrefix": "archive-p-",
+  "dbPath": "W:\\zeolab\\w05-p.sqlite",
+  "archiveLimitSize": 1073741824
+}
