@@ -22,16 +22,8 @@ import com.cc01cc.onearchive.core.dao.DatabaseAccessor;
 import com.cc01cc.onearchive.core.entity.ArchiveAsset;
 import com.cc01cc.onearchive.core.entity.ArchiveMetadata;
 import com.cc01cc.onearchive.core.entity.ViewFile;
-<<<<<<< HEAD
-<<<<<<<< HEAD:core/src/main/java/com/cc01cc/onearchive/core/archive/NewFileProcessingStrategy.java
-========
 import com.cc01cc.onearchive.core.ProgressCallback;
 import com.cc01cc.onearchive.core.ProgressInfo;
->>>>>>>> internal/develop/main:backend/one-archive-core/src/main/java/com/cc01cc/onearchive/core/archive/NewFileProcessingStrategy.java
-=======
-import com.cc01cc.onearchive.core.ProgressCallback;
-import com.cc01cc.onearchive.core.ProgressInfo;
->>>>>>> internal/develop/main
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;

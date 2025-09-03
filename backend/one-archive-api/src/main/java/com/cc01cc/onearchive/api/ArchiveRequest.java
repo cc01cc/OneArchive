@@ -14,20 +14,10 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/service/InfoService.java
-package com.cc01cc.onearchive.api.service;
-========
 package com.cc01cc.onearchive.api;
->>>>>>>> internal/develop/main:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/ArchiveRequest.java
 
-import com.cc01cc.onearchive.core.entity.InfoRoot;
+import lombok.Data;
 
-<<<<<<<< HEAD:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/service/InfoService.java
-import java.util.List;
-
-public interface InfoService {
-    public List<InfoRoot> getAllInfoRoots();
-========
 @Data
 public class ArchiveRequest {
     String rootDir;
@@ -35,5 +25,4 @@ public class ArchiveRequest {
     String archivePrefix;
     String dbPath;
     Long archiveLimitSize;
->>>>>>>> internal/develop/main:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/ArchiveRequest.java
 }

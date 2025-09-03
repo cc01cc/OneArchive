@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/controller/common/NotGlobalControllerResAdvice.java
-package com.cc01cc.onearchive.api.controller.common;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-/**
- * @author cc01cc(zeo) Yihong Zheng
- */
-//自定义注解
-@Target({ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface NotGlobalControllerResAdvice {
-========
 package com.cc01cc.onearchive.api.service;
 
 /**
@@ -45,5 +29,4 @@ public interface ArchiveService {
             String dbPath,
             Long archiveLimitSize
     );
->>>>>>>> internal/develop/main:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/service/ArchiveService.java
 }
