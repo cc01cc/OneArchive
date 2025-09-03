@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:backend/one-archive-core/src/test/java/integration/CreateEnv.java
 package integration;
 
 import com.cc01cc.onearchive.core.dao.DatabaseInitializer;
+========
+package com.cc01cc.onearchive.core.archive;
+
+import com.cc01cc.onearchive.core.ProgressCallback;
+import com.cc01cc.onearchive.core.ProgressInfo;
+import com.cc01cc.onearchive.core.entity.ViewFile;
+>>>>>>>> internal/develop/main:backend/one-archive-core/src/main/java/com/cc01cc/onearchive/core/archive/FileProcessingStrategy.java
 
 public class CreateEnv {
 
+<<<<<<<< HEAD:backend/one-archive-core/src/test/java/integration/CreateEnv.java
     public static void createTable() {
         DatabaseInitializer databaseInitializer = new DatabaseInitializer("jdbc:sqlite:one_archive.sqlite");
         databaseInitializer.initializeDatabase();
@@ -28,4 +37,8 @@ public class CreateEnv {
     public static void main(String[] args) {
         createTable();
     }
+========
+interface FileProcessingStrategy {
+    List<Long> process(ViewFile viewFile, Path filePath, ArchiveContext context, ProgressCallback callback) throws IOException;
+>>>>>>>> internal/develop/main:backend/one-archive-core/src/main/java/com/cc01cc/onearchive/core/archive/FileProcessingStrategy.java
 }

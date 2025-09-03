@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:backend/one-archive-core/src/main/java/com/cc01cc/onearchive/core/ProgressCallback.java
 package com.cc01cc.onearchive.core;
 
 /**
@@ -27,4 +28,14 @@ public interface ProgressCallback {
      * @param progressInfo 进度信息对象
      */
     void updateProgress(ProgressInfo progressInfo);
+========
+package com.cc01cc.onearchive.api.service;
+
+import com.cc01cc.onearchive.core.entity.InfoRoot;
+
+import java.util.List;
+
+public interface InfoService {
+    public List<InfoRoot> getAllInfoRoots();
+>>>>>>>> internal/develop/main:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/service/InfoService.java
 }

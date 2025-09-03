@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:core/src/test/java/integration/CreateEnv.java
-package integration;
+<<<<<<<< HEAD:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/service/InfoService.java
+package com.cc01cc.onearchive.api.service;
 ========
 package com.cc01cc.onearchive.api;
 >>>>>>>> internal/develop/main:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/ArchiveRequest.java
 
-import com.cc01cc.onearchive.core.dao.DatabaseInitializer;
+import com.cc01cc.onearchive.core.entity.InfoRoot;
 
-<<<<<<<< HEAD:core/src/test/java/integration/CreateEnv.java
-public class CreateEnv {
+<<<<<<<< HEAD:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/service/InfoService.java
+import java.util.List;
 
-    public static void createTable() {
-        DatabaseInitializer databaseInitializer = new DatabaseInitializer("jdbc:sqlite:one_archive.sqlite");
-        databaseInitializer.initializeDatabase();
-    }
-
-    public static void main(String[] args) {
-        createTable();
-    }
+public interface InfoService {
+    public List<InfoRoot> getAllInfoRoots();
 ========
 @Data
 public class ArchiveRequest {

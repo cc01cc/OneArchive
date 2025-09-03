@@ -14,49 +14,21 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:core/src/main/java/com/cc01cc/onearchive/core/entity/InfoRoot.java
-package com.cc01cc.onearchive.core.entity;
+<<<<<<<< HEAD:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/controller/common/NotGlobalControllerResAdvice.java
+package com.cc01cc.onearchive.api.controller.common;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-import org.jdbi.v3.core.mapper.reflect.ColumnName;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class InfoRoot {
-    private Long id;
-    
-    @JsonProperty("root_name")
-    private String name;
-    
-    @JsonProperty("root_path")
-    private String path;
-    
-    private String status;
-    private Long createdAt;
-    private Long updatedAt;
-    
-    @ColumnName("root_name")
-    public String getName() {
-        return name;
-    }
-    
-    @ColumnName("root_path")
-    public String getPath() {
-        return path;
-    }
-    
-    @ColumnName("created_at")
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-    
-    @ColumnName("updated_at")
-    public Long getUpdatedAt() {
-        return updatedAt;
-    }
-}
+/**
+ * @author cc01cc(zeo) Yihong Zheng
+ */
+//自定义注解
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface NotGlobalControllerResAdvice {
 ========
 package com.cc01cc.onearchive.api.service;
 
@@ -73,5 +45,5 @@ public interface ArchiveService {
             String dbPath,
             Long archiveLimitSize
     );
-}
 >>>>>>>> internal/develop/main:backend/one-archive-api/src/main/java/com/cc01cc/onearchive/api/service/ArchiveService.java
+}

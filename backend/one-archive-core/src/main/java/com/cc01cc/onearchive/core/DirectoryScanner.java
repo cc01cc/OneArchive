@@ -117,8 +117,11 @@ public class DirectoryScanner {
         }
         List<InfoDirectory> existingDirectories = dirListInDb;
         List<InfoFile> existingFiles = fileListInDb;
+<<<<<<< HEAD
 <<<<<<<< HEAD:core/src/main/java/com/cc01cc/onearchive/core/DirectoryScanner.java
 ========
+=======
+>>>>>>> internal/develop/main
 
         // 先统计目录信息用于进度计算
         DirectoryStatistics stats = scanDirectoryOnly(startPath);
@@ -129,7 +132,10 @@ public class DirectoryScanner {
             ProgressInfo progressInfo = new ProgressInfo(0, totalSize, 0, 0, "开始扫描目录: " + startPath.toString());
             callback.updateProgress(progressInfo);
         }
+<<<<<<< HEAD
 >>>>>>>> internal/develop/main:backend/one-archive-core/src/main/java/com/cc01cc/onearchive/core/DirectoryScanner.java
+=======
+>>>>>>> internal/develop/main
 
         Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
             @Override

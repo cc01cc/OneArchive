@@ -63,6 +63,93 @@ stop
 @enduml
 ```
 
+```plantuml
+@startuml
+title scanAndSaveDirectory 流程图
+
+start
+
+partition "初始化阶段" {
+    :获取根目录绝对路径;
+    :查询数据库中是否存在该根目录;
+    
+    if ("根目录不存在?") then (是)
+        :创建新的根目录;
+        :获取新根目录ID;
+    else (否)
+        :获取根目录ID;
+        :获取现有目录和文件列表;
+        :将根目录状态更新为 UPDATING;
+        :将所有目录标记为 WAIT_TO_DELETE;
+        :将所有文件标记为 WAIT_TO_DELETE;
+    endif
+}
+
+:扫描目录统计信息(用于进度计算);
+:初始化已处理大小计数器;
+
+if ("是否提供回调函数?") then (是)
+    :调用回调函数报告初始进度;
+endif
+
+partition "目录遍历阶段" {
+    :开始遍历目录树;
+
+    note right: 使用 Files.walkFileTree 方法
+    
+    :访问目录 (preVisitDirectory);
+    
+    partition "处理目录" {
+        :计算相对路径;
+        :创建 InfoDirectory 对象;
+        :设置目录属性 (rootId, name, path, mtime, status);
+        
+        if ("是否存在相同目录?") then (是)
+            :使用现有目录ID;
+            :恢复目录状态;
+            :更新数据库中的目录信息;
+        else (否)
+            :插入新目录到数据库;
+        endif
+    }
+    
+    :访问文件 (visitFile);
+    
+    partition "处理文件" {
+        :计算文件相对路径;
+        :获取父目录ID;
+        :计算文件哈希值;
+        :创建 InfoFile 对象;
+        :设置文件属性 (name, size, mtime, directoryId, hash);
+        
+        if ("是否存在相同文件?") then (是)
+            :使用现有文件ID;
+            :恢复文件状态;
+            :更新数据库中的文件信息;
+        else (否)
+            :设置文件状态为 UNARCHIVED;
+            :插入新文件到数据库;
+        endif
+        
+        :更新已处理大小;
+        
+        if ("是否提供回调函数且总大小>0?") then (是)
+            :计算进度百分比;
+            :调用回调函数更新进度;
+        endif
+    }
+    
+    :结束目录遍历;
+}
+
+if ("是否提供回调函数?") then (是)
+    :调用回调函数报告完成进度;
+endif
+
+stop
+@enduml
+```
+
 ## 3. 许可证
 
 - 本项目采用 Apache License 2.0 许可证，详情请见 [LICENSE](LICENSE) 文件。
