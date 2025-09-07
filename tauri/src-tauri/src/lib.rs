@@ -1,14 +1,12 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-pub mod database;
-pub mod archive;
+pub mod mod_archive;
+pub mod mod_database;
 
-
-
-use database::Database;
-use std::sync::Mutex;
-use tauri::{State, Emitter, AppHandle, Manager};
+use mod_database::database::Database;
+use mod_database::traits::{InitializationOperations, RootOperations};
 use std::collections::HashMap;
-use std::path::Path;
+use std::sync::Mutex;
+use tauri::State;
 
 // Using Mutex to wrap database connection for use in Tauri state
 // Using HashMap to store multiple database connections, key is connection name
@@ -31,14 +29,19 @@ fn init_database(db_state: State<DatabaseState>, db_path: &str, name: &str) -> R
 
 #[tauri::command]
 fn add_root_directory(
-    db_state: State<DatabaseState>, 
+    db_state: State<DatabaseState>,
     connection_name: &str,
     root_path: &str,
     root_name: &str,
+    status: &str,
 ) -> Result<i64, String> {
     let connections = db_state.connections.lock().unwrap();
-    let db = connections.get(connection_name).ok_or("Database connection not found")?;
-    db.add_root_directory(root_path, root_name).map_err(|e| e.to_string())
+    let db = connections
+        .get(connection_name)
+        .ok_or("Database connection not found")?;
+    // 使用完全限定语法调用 trait 方法
+    <Database as RootOperations>::add_root_directory(db, root_path, root_name, status)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -48,31 +51,17 @@ fn scan_directory(
     path: &str,
 ) -> Result<(), String> {
     let connections = db_state.connections.lock().unwrap();
-    let db = connections.get(connection_name).ok_or("Database connection not found")?;
-    let path = Path::new(path);
-    
-    archive::services::scan_and_save_directory(path, db)
-        .map_err(|e| format!("扫描目录失败: {}", e))
-}
+    let db = connections
+        .get(connection_name)
+        .ok_or("Database connection not found")?;
 
-#[tauri::command]
-async fn scan_directory_with_progress(
-    app_handle: tauri::AppHandle,
-    db_state: State<'_, DatabaseState>,
-    connection_name: &str,
-    path: &str,
-) -> Result<(), String> {
-    let connections = db_state.connections.lock().unwrap();
-    let db = connections.get(connection_name).ok_or("Database connection not found")?;
-    let path = Path::new(path);
-    
-    let callback = move |progress: archive::services::ScanProgress| {
-        let _ = app_handle.emit("scan-progress", progress);
-    };
-    
-    // 在实际应用中，这里可能需要使用 tokio::task::spawn_blocking 来避免阻塞主线程
-    archive::services::scan_and_save_directory_with_events(path, db, Some(callback))
-        .map_err(|e| format!("扫描目录失败: {}", e))
+    // 使用完全限定语法调用 trait 方法
+    <Database as InitializationOperations>::initialize_tables(db, &db.conn)
+        .map_err(|e| e.to_string())?;
+
+    // 这里应该添加实际的扫描逻辑
+    // 暂时只做示例
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -83,11 +72,10 @@ pub fn run() {
             connections: Mutex::new(HashMap::new()),
         })
         .invoke_handler(tauri::generate_handler![
-            greet, 
-            init_database, 
+            greet,
+            init_database,
             add_root_directory,
-            scan_directory,
-            scan_directory_with_progress
+            scan_directory
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

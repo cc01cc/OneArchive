@@ -80,8 +80,8 @@ partition "初始化阶段" {
         :获取根目录ID;
         :获取现有目录和文件列表;
         :将根目录状态更新为 UPDATING;
-        :将所有目录标记为 WAIT_TO_DELETE;
-        :将所有文件标记为 WAIT_TO_DELETE;
+        :将所有目录标记为 WaitToDelete;
+        :将所有文件标记为 WaitToDelete;
     endif
 }
 

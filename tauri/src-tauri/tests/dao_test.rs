@@ -1,8 +1,6 @@
-use std::fs;
 use tempfile::TempDir;
-use one_archive_lib::database::Database;
-use one_archive_lib::database::schema::InfoRoot;
-use one_archive_lib::database::constants::RootStatus;
+use one_archive_lib::mod_database::database::Database;
+use one_archive_lib::mod_database::traits::{RootOperations, InitializationOperations};
 
 #[test]
 fn test_database_operations() -> Result<(), Box<dyn std::error::Error>> {
@@ -16,7 +14,7 @@ fn test_database_operations() -> Result<(), Box<dyn std::error::Error>> {
 
     // 创建数据库
     let database = Database::new(&db_path)?;
-    Database::initialize_tables(&database.conn)?;
+    database.initialize_tables(&database.conn)?;
 
     // 测试路径
     let normal_path = root_path.to_string_lossy().to_string();
@@ -26,7 +24,7 @@ fn test_database_operations() -> Result<(), Box<dyn std::error::Error>> {
     println!("Long path with prefix: {}", long_path_prefix);
 
     // 添加根目录记录（使用普通路径）
-    let root_id = database.add_root_directory(&normal_path, "test_root")?;
+    let root_id = database.add_root_directory(&normal_path, "test_root", "UNARCHIVED")?;
     println!("Added root directory with ID: {}", root_id);
 
     // 使用普通路径查找
@@ -43,6 +41,6 @@ fn test_database_operations() -> Result<(), Box<dyn std::error::Error>> {
     for root in all_roots {
         println!("  ID: {:?}, Path: {}", root.id, root.root_path);
     }
-
+    
     Ok(())
 }

@@ -103,8 +103,8 @@ alt 根目录不存在
 else 根目录存在
     Root -> Service: 返回根目录记录
     Service -> Root: 更新根目录 status = UPDATING
-    Service -> Dir: 标记所有目录 status = WAIT_TO_DELETE
-    Service -> File: 标记所有文件 status = WAIT_TO_DELETE
+    Service -> Dir: 标记所有目录 status = WaitToDelete
+    Service -> File: 标记所有文件 status = WaitToDelete
 end
 
 Service -> Service: 统计目录总大小 (scan_directory_only)

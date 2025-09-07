@@ -52,26 +52,41 @@ impl DatabaseTableName {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RootStatus {
-    HEALTH,
-    UPDATING,
-    UNARCHIVED,
+    Health,
+    WaitToScan,
+    WaitToArchive,
+    InScanning,
+    InArchiving,
+    ErrorScanningFailed,
+    ErrorArchivingFailed,
+    WaitToDelete,
 }
 
 impl RootStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            RootStatus::HEALTH => "HEALTH",
-            RootStatus::UPDATING => "UPDATING",
-            RootStatus::UNARCHIVED => "UNARCHIVED",
+            RootStatus::Health => "HEALTH",
+            RootStatus::WaitToScan => "WAIT_TO_SCAN",
+            RootStatus::WaitToArchive => "WaitToArchive",
+            RootStatus::InScanning => "IN_SCANNING",
+            RootStatus::InArchiving => "IN_ARCHIVING",
+            RootStatus::ErrorScanningFailed => "ERROR_SCANNING_FAILED",
+            RootStatus::ErrorArchivingFailed => "ERROR_ARCHIVING_FAILED",
+            RootStatus::WaitToDelete => "WAIT_TO_DELETE",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => RootStatus::HEALTH,
-            "UPDATING" => RootStatus::UPDATING,
-            "UNARCHIVED" => RootStatus::UNARCHIVED,
-            _ => RootStatus::HEALTH, // 默认值
+            "HEALTH" => RootStatus::Health,
+            "WAIT_TO_SCAN" => RootStatus::WaitToScan,
+            "WaitToArchive" => RootStatus::WaitToArchive,
+            "IN_SCANNING" => RootStatus::InScanning,
+            "IN_ARCHIVING" => RootStatus::InArchiving,
+            "ERROR_SCANNING_FAILED" => RootStatus::ErrorScanningFailed,
+            "ERROR_ARCHIVING_FAILED" => RootStatus::ErrorArchivingFailed,
+            "WAIT_TO_DELETE" => RootStatus::WaitToDelete,
+            _ => RootStatus::Health, // 默认值
         }
     }
 }
@@ -93,26 +108,38 @@ impl ToSql for RootStatus {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum FileStatus {
-    HEALTH,
-    UNARCHIVED,
-    WAIT_TO_DELETE,
+    Health,
+    WaitToArchive,
+    WaitToDelete,
+    InScanning,
+    InArchiving,
+    ErrorScanningFailed,
+    ErrorArchivingFailed,
 }
 
 impl FileStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            FileStatus::HEALTH => "HEALTH",
-            FileStatus::UNARCHIVED => "UNARCHIVED",
-            FileStatus::WAIT_TO_DELETE => "WAIT_TO_DELETE",
+            FileStatus::Health => "HEALTH",
+            FileStatus::WaitToArchive => "WaitToArchive",
+            FileStatus::WaitToDelete => "WAIT_TO_DELETE",
+            FileStatus::InScanning => "IN_SCANNING",
+            FileStatus::InArchiving => "IN_ARCHIVING",
+            FileStatus::ErrorScanningFailed => "ERROR_SCANNING_FAILED",
+            FileStatus::ErrorArchivingFailed => "ERROR_ARCHIVING_FAILED",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => FileStatus::HEALTH,
-            "UNARCHIVED" => FileStatus::UNARCHIVED,
-            "WAIT_TO_DELETE" => FileStatus::WAIT_TO_DELETE,
-            _ => FileStatus::HEALTH, // 默认值
+            "HEALTH" => FileStatus::Health,
+            "WaitToArchive" => FileStatus::WaitToArchive,
+            "WAIT_TO_DELETE" => FileStatus::WaitToDelete,
+            "IN_SCANNING" => FileStatus::InScanning,
+            "IN_ARCHIVING" => FileStatus::InArchiving,
+            "ERROR_SCANNING_FAILED" => FileStatus::ErrorScanningFailed,
+            "ERROR_ARCHIVING_FAILED" => FileStatus::ErrorArchivingFailed,
+            _ => FileStatus::Health, // 默认值
         }
     }
 }
@@ -134,26 +161,38 @@ impl ToSql for FileStatus {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DirectoryStatus {
-    HEALTH,
-    UNARCHIVED,
-    WAIT_TO_DELETE,
+    Health,
+    WaitToArchive,
+    WaitToDelete,
+    InScanning,
+    InArchiving,
+    ErrorScanningFailed,
+    ErrorArchivingFailed,
 }
 
 impl DirectoryStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            DirectoryStatus::HEALTH => "HEALTH",
-            DirectoryStatus::UNARCHIVED => "UNARCHIVED",
-            DirectoryStatus::WAIT_TO_DELETE => "WAIT_TO_DELETE",
+            DirectoryStatus::Health => "HEALTH",
+            DirectoryStatus::WaitToArchive => "WaitToArchive",
+            DirectoryStatus::WaitToDelete => "WAIT_TO_DELETE",
+            DirectoryStatus::InScanning => "IN_SCANNING",
+            DirectoryStatus::InArchiving => "IN_ARCHIVING",
+            DirectoryStatus::ErrorScanningFailed => "ERROR_SCANNING_FAILED",
+            DirectoryStatus::ErrorArchivingFailed => "ERROR_ARCHIVING_FAILED",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => DirectoryStatus::HEALTH,
-            "UNARCHIVED" => DirectoryStatus::UNARCHIVED,
-            "WAIT_TO_DELETE" => DirectoryStatus::WAIT_TO_DELETE,
-            _ => DirectoryStatus::HEALTH, // 默认值
+            "HEALTH" => DirectoryStatus::Health,
+            "WaitToArchive" => DirectoryStatus::WaitToArchive,
+            "WAIT_TO_DELETE" => DirectoryStatus::WaitToDelete,
+            "IN_SCANNING" => DirectoryStatus::InScanning,
+            "IN_ARCHIVING" => DirectoryStatus::InArchiving,
+            "ERROR_SCANNING_FAILED" => DirectoryStatus::ErrorScanningFailed,
+            "ERROR_ARCHIVING_FAILED" => DirectoryStatus::ErrorArchivingFailed,
+            _ => DirectoryStatus::Health, // 默认值
         }
     }
 }
@@ -175,23 +214,23 @@ impl ToSql for DirectoryStatus {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ArchiveStatus {
-    HEALTH,
+    Health,
     UNCOMPLETED,
 }
 
 impl ArchiveStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            ArchiveStatus::HEALTH => "HEALTH",
+            ArchiveStatus::Health => "HEALTH",
             ArchiveStatus::UNCOMPLETED => "UNCOMPLETED",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => ArchiveStatus::HEALTH,
+            "HEALTH" => ArchiveStatus::Health,
             "UNCOMPLETED" => ArchiveStatus::UNCOMPLETED,
-            _ => ArchiveStatus::HEALTH, // 默认值
+            _ => ArchiveStatus::Health, // 默认值
         }
     }
 }
@@ -214,21 +253,21 @@ impl ToSql for ArchiveStatus {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AssetStatus {
     HEALTH,
-    UNARCHIVED,
+    WaitToArchive,
 }
 
 impl AssetStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
             AssetStatus::HEALTH => "HEALTH",
-            AssetStatus::UNARCHIVED => "UNARCHIVED",
+            AssetStatus::WaitToArchive => "WaitToArchive",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
             "HEALTH" => AssetStatus::HEALTH,
-            "UNARCHIVED" => AssetStatus::UNARCHIVED,
+            "WaitToArchive" => AssetStatus::WaitToArchive,
             _ => AssetStatus::HEALTH, // 默认值
         }
     }
@@ -252,21 +291,21 @@ impl ToSql for AssetStatus {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum FileVolumeAssetStatus {
     HEALTH,
-    UNARCHIVED,
+    WaitToArchive,
 }
 
 impl FileVolumeAssetStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
             FileVolumeAssetStatus::HEALTH => "HEALTH",
-            FileVolumeAssetStatus::UNARCHIVED => "UNARCHIVED",
+            FileVolumeAssetStatus::WaitToArchive => "WaitToArchive",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
             "HEALTH" => FileVolumeAssetStatus::HEALTH,
-            "UNARCHIVED" => FileVolumeAssetStatus::UNARCHIVED,
+            "WaitToArchive" => FileVolumeAssetStatus::WaitToArchive,
             _ => FileVolumeAssetStatus::HEALTH, // 默认值
         }
     }
@@ -290,20 +329,20 @@ impl ToSql for FileVolumeAssetStatus {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum MapFileAssetStatus {
     HEALTH,
-    UNARCHIVED,
+    WaitToArchive,
 }
 impl MapFileAssetStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
             MapFileAssetStatus::HEALTH => "HEALTH",
-            MapFileAssetStatus::UNARCHIVED => "UNARCHIVED",
+            MapFileAssetStatus::WaitToArchive => "WaitToArchive",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
             "HEALTH" => MapFileAssetStatus::HEALTH,
-            "UNARCHIVED" => MapFileAssetStatus::UNARCHIVED,
+            "WaitToArchive" => MapFileAssetStatus::WaitToArchive,
             _ => MapFileAssetStatus::HEALTH, // 默认值
         }
     }

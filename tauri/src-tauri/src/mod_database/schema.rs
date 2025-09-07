@@ -1,7 +1,7 @@
 //! 数据库表结构定义
 use serde::{Deserialize, Serialize};
 
-use crate::database::constants::{DirectoryStatus, RootStatus, FileStatus, ArchiveStatus, AssetStatus, MapFileAssetStatus};
+use super::constants::{DirectoryStatus, RootStatus, FileStatus, ArchiveStatus, AssetStatus, MapFileAssetStatus};
 use rusqlite::{Row, Result as SqliteResult};
 use std::convert::TryFrom;
 
