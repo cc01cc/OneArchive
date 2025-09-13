@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use tar::Builder;
 
 use crate::mod_database::schema::ViewFile;
-use crate::mod_database::traits::{
+use crate::mod_database::trait_database::{
     ArchiveAssetOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations, MapFileAssetOperations, RootOperations, StatusOperations, ViewOperations
 };
 

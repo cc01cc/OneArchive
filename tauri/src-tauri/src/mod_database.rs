@@ -2,6 +2,7 @@
 
 pub mod schema;
 pub mod constants;
-pub mod traits;
+pub mod trait_database;
 pub mod database;
-pub mod impls_database;
+pub mod impl_initialize;
+pub mod impl_database;

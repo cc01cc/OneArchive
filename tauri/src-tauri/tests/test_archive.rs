@@ -1,23 +1,23 @@
 //! ArchiveIn 功能集成测试
 
 use log::info;
-use one_archive_lib::mod_archive::impls_archive::ArchiveServices;
-use one_archive_lib::mod_archive::traits::DirectoryScanOperations;
+use one_archive_lib::mod_scan::impl_scan::ScanServices;
+use one_archive_lib::mod_scan::trait_scan::DirectoryScanOperations;
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use tempfile::TempDir;
 
-use one_archive_lib::mod_archive::impls_archive::archive_in_impl::ArchiveInServices;
-use one_archive_lib::mod_archive::traits_archive::ArchiveContext;
-use one_archive_lib::mod_archive::traits_archive::ArchiveOperations;
+use one_archive_lib::mod_archive::impl_archive::ArchiveInServices;
+use one_archive_lib::mod_archive::trait_archive::ArchiveContext;
+use one_archive_lib::mod_archive::trait_archive::ArchiveOperations;
 use one_archive_lib::mod_database::constants::{
     AssetStatus, DirectoryStatus, FileStatus, MapFileAssetStatus, RootStatus,
 };
 use one_archive_lib::mod_database::database::Database;
-use one_archive_lib::mod_database::traits::{
+use one_archive_lib::mod_database::trait_database::{
     ArchiveAssetOperations, DirectoryOperations, FileOperations, InitializationOperations,
-    MapFileAssetOperations, RootOperations, ViewOperations,
+    MapFileAssetOperations, RootOperations,
 };
 
 // 常量定义
@@ -134,7 +134,10 @@ fn create_large_test_file_with_different_chunks(
 }
 
 /// 验证数据库记录
-fn assert_database_records(test_source_dir: &Path, database: &Database) -> Result<(), Box<dyn std::error::Error>> {
+fn assert_database_records(
+    test_source_dir: &Path,
+    database: &Database,
+) -> Result<(), Box<dyn std::error::Error>> {
     // 验证资产表
     let assets = database.find_archive_assets_by_status(None)?;
     assert!(!assets.is_empty(), "应该创建了存档资产");
@@ -183,26 +186,27 @@ fn assert_database_records(test_source_dir: &Path, database: &Database) -> Resul
     );
 
     // 验证文件状态
-    let files = database.find_files_by_status_and_root_id(root_info.id.unwrap(),None)?;
+    let files = database.find_files_by_status_and_root_id(root_info.id.unwrap(), None)?;
     assert!(!files.is_empty(), "应该存在文件记录");
     for file in &files {
         assert_eq!(
             file.status,
             FileStatus::Health,
-            "文件状态应为 Health，实际为 {:?}，文件名: {}",
+            "文件状态应为 Health，实际为 {:?}，文件名：{}",
             file.status,
             file.file_name
         );
     }
 
     // 验证目录状态
-    let directories = database.find_directories_by_status_and_root_id(root_info.id.unwrap(), None)?;
+    let directories =
+        database.find_directories_by_status_and_root_id(root_info.id.unwrap(), None)?;
     assert!(!directories.is_empty(), "应该存在目录记录");
     for directory in &directories {
         assert_eq!(
             directory.status,
             DirectoryStatus::Health,
-            "目录状态应为 Health，实际为 {:?}，目录名: {}",
+            "目录状态应为 Health，实际为 {:?}，目录名：{}",
             directory.status,
             directory.directory_name
         );
@@ -226,7 +230,7 @@ fn assert_archive_files(archive_dir: &Path) -> Result<(), Box<dyn std::error::Er
         let path = entry.path();
         if path.is_file() {
             let size = fs::metadata(&path)?.len() as i64;
-            info!("{} 存档文件大小: {}", path.display(), size);
+            info!("{} 存档文件大小：{}", path.display(), size);
             assert!(size > 0, "存档文件大小应该大于 0");
             // 1024 * 5 模拟头文件的开销
             assert!(
@@ -263,7 +267,7 @@ fn assert_volume_processing_different_content(
         test_source_dir,
         database,
         "large_file_different.dat",
-        4, // 4个不同分卷
+        4, // 4 个不同分卷
         4, // 四个唯一资产
     )
 }
@@ -288,7 +292,7 @@ fn assert_volume_processing_common(
     let large_file = files
         .iter()
         .find(|f| f.file_name == file_name)
-        .expect(&format!("应该找到大文件: {}", file_name));
+        .expect(&format!("应该找到大文件：{}", file_name));
 
     // 验证大文件大小是 2MB
     assert_eq!(
@@ -385,8 +389,8 @@ fn test_basic_archive_in() -> Result<(), Box<dyn std::error::Error>> {
     create_test_files(&env.test_source_dir)?;
 
     // 扫描目录并保存到数据库
-    let archive_service = ArchiveServices::new();
-    archive_service.scan_and_save_directory_with_events(
+    let scan_service = ScanServices::new();
+    scan_service.scan_and_save_directory_with_events(
         &env.test_source_dir,
         &env.database,
         None::<fn(_)>,
@@ -395,8 +399,8 @@ fn test_basic_archive_in() -> Result<(), Box<dyn std::error::Error>> {
     // 执行存档操作
     let mut context = env.create_archive_context();
 
-    let archive_service = ArchiveInServices::new();
-    archive_service.archive_file_in_db(
+    let scan_service = ArchiveInServices::new();
+    scan_service.archive_file_in_db(
         env.test_source_dir.to_str().unwrap(),
         &mut context,
         &env.database,
@@ -421,8 +425,8 @@ fn test_archive_in_with_same_content_chunks() -> Result<(), Box<dyn std::error::
     create_large_test_file_with_same_chunk(&env.test_source_dir.join("large_file.dat"))?;
 
     // 扫描目录并保存到数据库
-    let archive_service = ArchiveServices::new();
-    archive_service.scan_and_save_directory_with_events(
+    let scan_service = ScanServices::new();
+    scan_service.scan_and_save_directory_with_events(
         &env.test_source_dir,
         &env.database,
         None::<fn(_)>,
@@ -431,8 +435,8 @@ fn test_archive_in_with_same_content_chunks() -> Result<(), Box<dyn std::error::
     // 执行存档操作
     let mut context = env.create_archive_context(); // 512KB 限制，强制分卷
 
-    let archive_service = ArchiveInServices::new();
-    archive_service.archive_file_in_db(
+    let scan_service = ArchiveInServices::new();
+    scan_service.archive_file_in_db(
         env.test_source_dir.to_str().unwrap(),
         &mut context,
         &env.database,
@@ -456,8 +460,8 @@ fn test_archive_in_with_different_content_chunks() -> Result<(), Box<dyn std::er
     )?;
 
     // 扫描目录并保存到数据库
-    let archive_service = ArchiveServices::new();
-    archive_service.scan_and_save_directory_with_events(
+    let scan_service = ScanServices::new();
+    scan_service.scan_and_save_directory_with_events(
         &env.test_source_dir,
         &env.database,
         None::<fn(_)>,
@@ -466,8 +470,8 @@ fn test_archive_in_with_different_content_chunks() -> Result<(), Box<dyn std::er
     // 执行存档操作
     let mut context = env.create_archive_context(); // 512KB 限制，强制分卷
 
-    let archive_service = ArchiveInServices::new();
-    archive_service.archive_file_in_db(
+    let scan_service = ArchiveInServices::new();
+    scan_service.archive_file_in_db(
         env.test_source_dir.to_str().unwrap(),
         &mut context,
         &env.database,

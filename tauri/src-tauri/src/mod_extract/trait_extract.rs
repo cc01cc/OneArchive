@@ -1,8 +1,8 @@
 //! 解档操作 trait 定义
 
 use anyhow::Result as AnyResult;
-use crate::mod_extract::models::{ExtractTask, ExtractProgress};
-use crate::mod_database::traits::{
+use crate::mod_extract::model_extract::{ExtractTask, ExtractProgress};
+use crate::mod_database::trait_database::{
     ArchiveAssetOperations, ArchiveMetadataOperations, DirectoryOperations, MapFileAssetOperations, ViewOperations
 };
 

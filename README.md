@@ -18,15 +18,16 @@ OneArchive 是一个文件归档系统，旨在帮助用户高效地管理和备
 
 ### 2.1. 环境要求
 
-- Java 21+
-- Maven 3.6+
+- 仅进行了 Windows 11 进行测试
 
-### 2.2. 构建项目
+## 开发
 
 ```bash
-bash
-mvn clean install
+pnpm run tauri dev
 ```
+
+![tauri-design](./assets/tauri-design.png)
+
 
 ```plantuml
 @startuml 存档流程活动图

@@ -1,10 +1,14 @@
 //! 数据库仓库实现
 //! 实现数据库操作的具体逻辑
 
-use super::super::constants::{DatabaseTableName, DirectoryStatus, FileStatus};
-use super::super::database::Database;
-use super::super::schema::{InfoDirectory, InfoFile, InfoRoot, ViewFile};
-use super::super::traits::{
+use crate::mod_database::constants::{ArchiveStatus, AssetStatus, MapFileAssetStatus};
+use crate::mod_database::impl_initialize;
+use crate::mod_database::schema::{ArchiveAsset, ArchiveMetadata, MapFileAsset, ViewAsset};
+
+use super::constants::{DatabaseTableName, DirectoryStatus, FileStatus};
+use super::database::Database;
+use super::schema::{InfoDirectory, InfoFile, InfoRoot, ViewFile};
+use super::trait_database::{
     ArchiveAssetOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations,
     InitializationOperations, MapFileAssetOperations, RootOperations, StatusOperations,
     ViewOperations,
@@ -341,7 +345,7 @@ impl ArchiveMetadataOperations for Database {
     /// 返回插入记录的 ID
     fn insert_archive_metadata(
         &self,
-        archive: &super::super::schema::ArchiveMetadata,
+        archive: &ArchiveMetadata,
     ) -> SqliteResult<i64> {
         self.conn.execute(
             "INSERT INTO archive_metadata (archive_uri, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status)
@@ -371,7 +375,7 @@ impl ArchiveMetadataOperations for Database {
     /// 返回操作结果
     fn update_archive_metadata(
         &self,
-        archive: &super::super::schema::ArchiveMetadata,
+        archive: &ArchiveMetadata,
     ) -> SqliteResult<()> {
         self.conn.execute(
             "UPDATE archive_metadata SET archive_name = ?1, archive_limit_size = ?2, archive_hash = ?3, is_compressed = ?4, compressed_algorithm = ?5, is_encrypted = ?6, encryption_algorithm = ?7, status = ?8, updated_at = strftime('%s', 'now')
@@ -401,7 +405,7 @@ impl ArchiveMetadataOperations for Database {
     fn find_archive_metadata_by_id(
         &self,
         id: i64,
-    ) -> SqliteResult<Option<super::super::schema::ArchiveMetadata>> {
+    ) -> SqliteResult<Option<ArchiveMetadata>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
              FROM archive_metadata WHERE id = ?1"
@@ -426,7 +430,7 @@ impl ArchiveMetadataOperations for Database {
     fn find_archive_metadata_by_name(
         &self,
         name: &str,
-    ) -> SqliteResult<Option<super::super::schema::ArchiveMetadata>> {
+    ) -> SqliteResult<Option<ArchiveMetadata>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
              FROM archive_metadata WHERE archive_name = ?1"
@@ -449,8 +453,8 @@ impl ArchiveMetadataOperations for Database {
     /// 返回存档元数据列表
     fn find_archive_metadata_by_status(
         &self,
-        status: Option<super::super::constants::ArchiveStatus>,
-    ) -> SqliteResult<Vec<super::super::schema::ArchiveMetadata>> {
+        status: Option<ArchiveStatus>,
+    ) -> SqliteResult<Vec<ArchiveMetadata>> {
         let sql = if status.is_some() {
             "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
              FROM archive_metadata WHERE status = ?1"
@@ -486,7 +490,7 @@ impl ArchiveAssetOperations for Database {
     /// 返回插入记录的 ID
     fn insert_archive_asset(
         &self,
-        asset: &super::super::schema::ArchiveAsset,
+        asset: &ArchiveAsset,
     ) -> SqliteResult<i64> {
         self.conn.execute(
             "INSERT INTO archive_asset (archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status)
@@ -512,7 +516,7 @@ impl ArchiveAssetOperations for Database {
     ///
     /// # 返回值
     /// 返回操作结果
-    fn update_archive_asset(&self, asset: &super::super::schema::ArchiveAsset) -> SqliteResult<()> {
+    fn update_archive_asset(&self, asset: &ArchiveAsset) -> SqliteResult<()> {
         self.conn.execute(
             "UPDATE archive_asset SET archive_id = ?1, asset_name = ?2, asset_size = ?3, asset_hash = ?4, asset_mtime = ?5, asset_relative_path = ?6, status = ?7, updated_at = strftime('%s', 'now')
              WHERE id = ?8",
@@ -540,7 +544,7 @@ impl ArchiveAssetOperations for Database {
     fn find_archive_asset_by_id(
         &self,
         id: i64,
-    ) -> SqliteResult<Option<super::super::schema::ArchiveAsset>> {
+    ) -> SqliteResult<Option<ArchiveAsset>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
              FROM archive_asset WHERE id = ?1"
@@ -565,7 +569,7 @@ impl ArchiveAssetOperations for Database {
     fn find_archive_assets_by_archive_id(
         &self,
         archive_id: i64,
-    ) -> SqliteResult<Vec<super::super::schema::ArchiveAsset>> {
+    ) -> SqliteResult<Vec<ArchiveAsset>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
              FROM archive_asset WHERE archive_id = ?1"
@@ -589,8 +593,8 @@ impl ArchiveAssetOperations for Database {
     /// 返回存档资源列表
     fn find_archive_assets_by_status(
         &self,
-        status: Option<super::super::constants::AssetStatus>,
-    ) -> SqliteResult<Vec<super::super::schema::ArchiveAsset>> {
+        status: Option<AssetStatus>,
+    ) -> SqliteResult<Vec<ArchiveAsset>> {
         let sql = if status.is_some() {
             "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
              FROM archive_asset WHERE status = ?1"
@@ -647,7 +651,7 @@ impl MapFileAssetOperations for Database {
     ///
     /// # 返回值
     /// 返回插入记录的 ID
-    fn insert_map_file_asset(&self, map: &super::super::schema::MapFileAsset) -> SqliteResult<i64> {
+    fn insert_map_file_asset(&self, map: &MapFileAsset) -> SqliteResult<i64> {
         self.conn.execute(
             "INSERT INTO map_file_asset (file_id, asset_id, volume_order, status)
              VALUES (?1, ?2, ?3, ?4)",
@@ -669,7 +673,7 @@ impl MapFileAssetOperations for Database {
     ///
     /// # 返回值
     /// 返回操作结果
-    fn update_map_file_asset(&self, map: &super::super::schema::MapFileAsset) -> SqliteResult<()> {
+    fn update_map_file_asset(&self, map: &MapFileAsset) -> SqliteResult<()> {
         self.conn.execute(
             "UPDATE map_file_asset SET file_id = ?1, asset_id = ?2, volume_order = ?3, status = ?4, updated_at = strftime('%s', 'now')
              WHERE id = ?5",
@@ -694,7 +698,7 @@ impl MapFileAssetOperations for Database {
     fn find_map_file_asset_by_id(
         &self,
         id: i64,
-    ) -> SqliteResult<Option<super::super::schema::MapFileAsset>> {
+    ) -> SqliteResult<Option<MapFileAsset>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
              FROM map_file_asset WHERE id = ?1",
@@ -719,7 +723,7 @@ impl MapFileAssetOperations for Database {
     fn find_map_file_asset_by_file_id(
         &self,
         file_id: i64,
-    ) -> SqliteResult<Vec<super::super::schema::MapFileAsset>> {
+    ) -> SqliteResult<Vec<MapFileAsset>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
              FROM map_file_asset WHERE file_id = ?1",
@@ -744,7 +748,7 @@ impl MapFileAssetOperations for Database {
     fn find_map_file_asset_by_file_id_ordered(
         &self,
         file_id: i64,
-    ) -> SqliteResult<Vec<super::super::schema::MapFileAsset>> {
+    ) -> SqliteResult<Vec<MapFileAsset>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
              FROM map_file_asset WHERE file_id = ?1 ORDER BY volume_order ASC",
@@ -770,7 +774,7 @@ impl MapFileAssetOperations for Database {
     fn find_map_file_asset_by_asset_id(
         &self,
         asset_id: i64,
-    ) -> SqliteResult<Vec<super::super::schema::MapFileAsset>> {
+    ) -> SqliteResult<Vec<MapFileAsset>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
              FROM map_file_asset WHERE asset_id = ?1",
@@ -794,8 +798,8 @@ impl MapFileAssetOperations for Database {
     /// 返回映射信息列表
     fn find_map_file_asset_by_status(
         &self,
-        status: Option<super::super::constants::MapFileAssetStatus>,
-    ) -> SqliteResult<Vec<super::super::schema::MapFileAsset>> {
+        status: Option<MapFileAssetStatus>,
+    ) -> SqliteResult<Vec<MapFileAsset>> {
         let sql = if status.is_some() {
             "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
              FROM map_file_asset WHERE status = ?1"
@@ -936,7 +940,7 @@ impl ViewOperations for Database {
     fn find_view_assets_by_archive_id(
         &self,
         archive_id: i64,
-    ) -> SqliteResult<Vec<super::super::schema::ViewAsset>> {
+    ) -> SqliteResult<Vec<ViewAsset>> {
         let sql = "SELECT archive_id, archive_name, archive_status, asset_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, asset_status, file_id, volume_order
                  FROM view_asset 
                  WHERE archive_id = ?1";
@@ -946,7 +950,7 @@ impl ViewOperations for Database {
 
         let mut view_assets = Vec::new();
         while let Some(row) = rows.next()? {
-            let view_asset: super::super::schema::ViewAsset = row.try_into()?;
+            let view_asset: ViewAsset = row.try_into()?;
             view_assets.push(view_asset);
         }
         Ok(view_assets)
@@ -955,7 +959,7 @@ impl ViewOperations for Database {
     fn find_view_assets_by_file_id(
         &self,
         file_id: i64,
-    ) -> SqliteResult<Vec<super::super::schema::ViewAsset>> {
+    ) -> SqliteResult<Vec<ViewAsset>> {
         let sql = "SELECT archive_id, archive_uri, archive_name, archive_status, asset_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, asset_status, file_id, volume_order
                  FROM view_asset 
                  WHERE file_id = ?1";
@@ -964,7 +968,7 @@ impl ViewOperations for Database {
         let mut rows = stmt.query(params![file_id])?;
         let mut view_assets = Vec::new();
         while let Some(row) = rows.next()? {
-            let view_asset: super::super::schema::ViewAsset = row.try_into()?;
+            let view_asset: ViewAsset = row.try_into()?;
             view_assets.push(view_asset);
         }
         Ok(view_assets)
@@ -978,7 +982,7 @@ impl InitializationOperations for Database {
     /// # 参数
     /// * `conn` - 数据库连接引用
     fn initialize_tables(&self, conn: &Connection) -> SqliteResult<()> {
-        super::initializer::initialize_tables(conn)
+        impl_initialize::initialize_tables(conn)
     }
 }
 

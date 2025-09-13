@@ -1,4 +1,4 @@
-//! 存档服务的具体实现
+//! 扫描服务的具体实现
 
 use anyhow::Result as AnyResult;
 use anyhow::anyhow;
@@ -11,21 +11,21 @@ use walkdir::WalkDir;
 
 use crate::mod_database::constants::{DirectoryStatus, FileStatus, RootStatus};
 
-use crate::mod_archive::models::{DirectoryStatistics, ScanProgress};
-use crate::mod_archive::traits::{DirectoryScanOperations, DirectoryStatisticsOperations};
+use crate::mod_scan::model_scan::{DirectoryStatistics, ScanProgress};
+use crate::mod_scan::trait_scan::{DirectoryScanOperations, DirectoryStatisticsOperations};
 use crate::mod_database::schema::{InfoDirectory, InfoFile, InfoRoot};
-use crate::mod_database::traits::DirectoryOperations;
-use crate::mod_database::traits::FileOperations;
-use crate::mod_database::traits::RootOperations;
-use crate::mod_database::traits::StatusOperations;
+use crate::mod_database::trait_database::DirectoryOperations;
+use crate::mod_database::trait_database::FileOperations;
+use crate::mod_database::trait_database::RootOperations;
+use crate::mod_database::trait_database::StatusOperations;
 
-/// 归档服务实现结构体
-pub struct ArchiveServices;
+/// 扫描服务实现结构体
+pub struct ScanServices;
 
-impl ArchiveServices {
-    /// 创建新的归档服务实例
+impl ScanServices {
+    /// 创建新的扫描服务实例
     pub fn new() -> Self {
-        ArchiveServices
+        ScanServices
     }
 
     /// 处理根目录逻辑
@@ -206,7 +206,7 @@ impl ArchiveServices {
     }
 }
 
-impl Default for ArchiveServices {
+impl Default for ScanServices {
     fn default() -> Self {
         Self::new()
     }
@@ -221,7 +221,7 @@ fn calculate_file_hash(file_path: &Path) -> AnyResult<String> {
     Ok(format!("{:x}", hash))
 }
 
-impl DirectoryStatisticsOperations for ArchiveServices {
+impl DirectoryStatisticsOperations for ScanServices {
     /// 获取目录统计信息
     fn get_directory_statistics(&self, start_path: &Path) -> AnyResult<DirectoryStatistics> {
         let mut stats = DirectoryStatistics::default();
@@ -250,7 +250,7 @@ impl DirectoryStatisticsOperations for ArchiveServices {
     }
 }
 
-impl DirectoryScanOperations for ArchiveServices {
+impl DirectoryScanOperations for ScanServices {
     /**
      * 扫描目录并更新数据库
      *

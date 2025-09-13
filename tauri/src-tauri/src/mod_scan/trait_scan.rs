@@ -1,10 +1,12 @@
 //! 归档操作 trait 定义
 //! 定义各种归档操作的接口
 
-use crate::mod_database::traits::DirectoryOperations;
-use crate::mod_database::traits::FileOperations;
-use crate::mod_database::traits::RootOperations;
-use crate::mod_database::traits::StatusOperations;
+use crate::mod_database::trait_database::DirectoryOperations;
+use crate::mod_database::trait_database::FileOperations;
+use crate::mod_database::trait_database::RootOperations;
+use crate::mod_database::trait_database::StatusOperations;
+use crate::mod_scan::model_scan::DirectoryStatistics;
+use crate::mod_scan::model_scan::ScanProgress;
 use anyhow::Result as AnyResult;
 use std::path::Path;
 
@@ -33,7 +35,7 @@ pub trait DirectoryScanOperations {
     ) -> AnyResult<()>
     where
         D: RootOperations + DirectoryOperations + FileOperations + StatusOperations,
-        F: Fn(crate::mod_archive::models::ScanProgress);
+        F: Fn(ScanProgress);
 }
 
 /// 目录统计 trait
@@ -48,5 +50,5 @@ pub trait DirectoryStatisticsOperations {
     fn get_directory_statistics(
         &self,
         path: &Path,
-    ) -> AnyResult<crate::mod_archive::models::DirectoryStatistics>;
+    ) -> AnyResult<DirectoryStatistics>;
 }

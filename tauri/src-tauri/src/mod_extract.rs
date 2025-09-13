@@ -1,3 +1,3 @@
-pub mod models;
-pub mod traits_extract;
-pub mod impls_extract;
+pub mod model_extract;
+pub mod trait_extract;
+pub mod impl_extract;

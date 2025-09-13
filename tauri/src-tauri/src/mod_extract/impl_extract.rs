@@ -17,12 +17,12 @@ use tar::{Archive as TarArchive, EntryType};
 use crate::mod_database::constants::AssetStatus;
 use crate::mod_database::constants::DirectoryStatus;
 use crate::mod_database::constants::FileStatus;
-use crate::mod_database::traits::DirectoryOperations;
-use crate::mod_database::traits::{
+use crate::mod_database::trait_database::DirectoryOperations;
+use crate::mod_database::trait_database::{
     ArchiveAssetOperations, ArchiveMetadataOperations, MapFileAssetOperations, ViewOperations,
 };
-use crate::mod_extract::models::{ExtractProgress, ExtractTask};
-use crate::mod_extract::traits_extract::ExtractOperations;
+use crate::mod_extract::model_extract::{ExtractProgress, ExtractTask};
+use crate::mod_extract::trait_extract::ExtractOperations;
 
 /// 解档服务实现
 pub struct ExtractService;

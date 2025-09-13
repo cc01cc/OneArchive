@@ -1,16 +1,15 @@
 use log::info;
+use one_archive_lib::mod_scan::impl_scan::ScanServices;
+use one_archive_lib::mod_scan::model_scan::ScanProgress;
+use one_archive_lib::mod_scan::trait_scan::{DirectoryScanOperations, DirectoryStatisticsOperations};
 use std::fs;
 use std::io::Write;
 use tempfile::TempDir;
 
-use one_archive_lib::mod_archive::impls_archive::implementation::ArchiveServices;
-use one_archive_lib::mod_archive::models::ScanProgress;
-use one_archive_lib::mod_archive::traits::DirectoryScanOperations;
-use one_archive_lib::mod_archive::traits::DirectoryStatisticsOperations;
 use one_archive_lib::mod_database::constants::{DirectoryStatus, FileStatus, RootStatus};
 use one_archive_lib::mod_database::database::Database;
 use one_archive_lib::mod_database::schema::InfoFile;
-use one_archive_lib::mod_database::traits::{
+use one_archive_lib::mod_database::trait_database::{
     DirectoryOperations, FileOperations, InitializationOperations, RootOperations, ViewOperations,
 };
 
@@ -61,10 +60,10 @@ fn test_get_directory_statistics() -> Result<(), Box<dyn std::error::Error>> {
     file3.write_all(b"This is file 3 in subdir")?; // 23 bytes
 
     // 创建归档服务实例
-    let archive_service = ArchiveServices::new();
+    let scan_service = ScanServices::new();
 
     // 获取目录统计信息
-    let stats = archive_service.get_directory_statistics(root_path)?;
+    let stats = scan_service.get_directory_statistics(root_path)?;
 
     // 验证统计结果
     assert_eq!(
@@ -98,10 +97,10 @@ fn test_get_directory_statistics_empty_dir() -> Result<(), Box<dyn std::error::E
     let root_path = temp_dir.path();
 
     // 创建归档服务实例
-    let archive_service = ArchiveServices::new();
+    let scan_service = ScanServices::new();
 
     // 获取目录统计信息
-    let stats = archive_service.get_directory_statistics(root_path)?;
+    let stats = scan_service.get_directory_statistics(root_path)?;
 
     // 验证统计结果
     assert_eq!(stats.total_size, 0, "空目录总大小应该为 0");
@@ -143,10 +142,10 @@ fn test_get_directory_statistics_nested_structure() -> Result<(), Box<dyn std::e
     fs::File::create(&level3_file)?.write_all(b"level3")?; // 6 bytes
 
     // 创建归档服务实例
-    let archive_service = ArchiveServices::new();
+    let scan_service = ScanServices::new();
 
     // 获取目录统计信息
-    let stats = archive_service.get_directory_statistics(root_path)?;
+    let stats = scan_service.get_directory_statistics(root_path)?;
 
     // 验证统计结果
     assert_eq!(
@@ -219,8 +218,8 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
     database.initialize_tables(&database.conn)?;
 
     // 执行扫描和保存操作
-    let archive_service = ArchiveServices::new();
-    let result = archive_service.scan_and_save_directory_with_events(
+    let scan_service = ScanServices::new();
+    let result = scan_service.scan_and_save_directory_with_events(
         root_path,
         &database,
         Some(progress_callback),
@@ -402,10 +401,10 @@ fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn 
     database.initialize_tables(&database.conn)?;
 
     // 创建归档服务实例
-    let archive_service = ArchiveServices::new();
+    let scan_service = ScanServices::new();
 
     // 首次扫描
-    let result1 = archive_service.scan_and_save_directory_with_events(
+    let result1 = scan_service.scan_and_save_directory_with_events(
         root_path,
         &database,
         Some(progress_callback),
@@ -429,7 +428,7 @@ fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn 
     fs::remove_file(&file3_path)?;
 
     // 第二次扫描（增量扫描）
-    let result2 = archive_service.scan_and_save_directory_with_events(
+    let result2 = scan_service.scan_and_save_directory_with_events(
         root_path,
         &database,
         Some(progress_callback),
@@ -586,10 +585,10 @@ fn test_multiple_independent_roots() -> Result<(), Box<dyn std::error::Error>> {
     database.initialize_tables(&database.conn)?;
 
     // 创建归档服务实例
-    let archive_service = ArchiveServices::new();
+    let scan_service = ScanServices::new();
 
     // 扫描第一个根目录
-    let result1 = archive_service.scan_and_save_directory_with_events(
+    let result1 = scan_service.scan_and_save_directory_with_events(
         root_path1,
         &database,
         Some(progress_callback),
@@ -597,7 +596,7 @@ fn test_multiple_independent_roots() -> Result<(), Box<dyn std::error::Error>> {
     assert!(result1.is_ok(), "第一个根目录扫描应该成功");
 
     // 扫描第二个根目录
-    let result2 = archive_service.scan_and_save_directory_with_events(
+    let result2 = scan_service.scan_and_save_directory_with_events(
         root_path2,
         &database,
         Some(progress_callback),

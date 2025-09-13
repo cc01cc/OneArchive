@@ -10,18 +10,17 @@ use std::fs::{self, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 use std::path::PathBuf;
-use std::time::SystemTime;
 use tar::Header;
 
-use crate::mod_archive::traits_archive::{ArchiveContext, ArchiveOperations};
+use crate::mod_archive::trait_archive::{ArchiveContext, ArchiveOperations};
 use crate::mod_database::constants::DatabaseTableName;
 use crate::mod_database::constants::DirectoryStatus;
 use crate::mod_database::constants::RootStatus;
 use crate::mod_database::constants::{ArchiveStatus, AssetStatus, FileStatus, MapFileAssetStatus};
 use crate::mod_database::schema::{ArchiveAsset, ArchiveMetadata, MapFileAsset, ViewFile};
-use crate::mod_database::traits::{
-    ArchiveAssetOperations, ArchiveMetadataOperations, FileOperations, MapFileAssetOperations,
-    RootOperations, StatusOperations, ViewOperations,DirectoryOperations
+use crate::mod_database::trait_database::{
+    ArchiveAssetOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations,
+    MapFileAssetOperations, RootOperations, StatusOperations, ViewOperations,
 };
 
 /// 存档服务实现结构体
@@ -158,7 +157,7 @@ impl ArchiveOperations for ArchiveInServices {
             let files = database
                 .find_files_by_status_and_root_id(root_id, None)?
                 .into_iter()
-             .filter(|file| file.directory_id == directory.id.unwrap_or(0))
+                .filter(|file| file.directory_id == directory.id.unwrap_or(0))
                 .collect::<Vec<_>>();
 
             // 检查是否有文件不是健康状态
@@ -212,18 +211,17 @@ impl ArchiveInServices {
         let health_file_list =
             database.find_view_files_by_hash_and_status(&file_hash, Some(FileStatus::Health))?;
 
-        let mut asset_ids: Option<Vec<i64>> = None;
-        if health_file_list.is_empty() {
+        let asset_ids = if health_file_list.is_empty() {
             // 处理新文件
             let strategy = NewFileProcessingStrategy;
-            asset_ids = Some(strategy.process(file_info, file_path, context, database)?);
+            strategy.process(file_info, file_path, context, database)?
         } else {
             // 处理已存在的文件
             let strategy = ExistingFileProcessingStrategy;
-            asset_ids = Some(strategy.process(&file_hash, database)?);
-        }
+            strategy.process(&file_hash, database)?
+        };
 
-        self.save_file_indexes(file_info, asset_ids.as_ref().unwrap(), database);
+        let _ = self.save_file_indexes(file_info, &asset_ids, database);
         // 更新 file Status
         database.mark_table_status_by_id(
             DatabaseTableName::InfoFile,

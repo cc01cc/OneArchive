@@ -1,6 +1,6 @@
 use tempfile::TempDir;
 use one_archive_lib::mod_database::database::Database;
-use one_archive_lib::mod_database::traits::{RootOperations, InitializationOperations};
+use one_archive_lib::mod_database::trait_database::{RootOperations, InitializationOperations};
 
 #[test]
 fn test_database_operations() -> Result<(), Box<dyn std::error::Error>> {

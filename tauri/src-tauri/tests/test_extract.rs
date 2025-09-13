@@ -1,25 +1,21 @@
 //! ArchiveExtract 功能集成测试
 
 use log::info;
-use one_archive_lib::mod_archive;
-use one_archive_lib::mod_archive::traits::DirectoryScanOperations;
+use one_archive_lib::mod_scan::impl_scan::ScanServices;
+use one_archive_lib::mod_scan::model_scan::ScanProgress;
+use one_archive_lib::mod_scan::trait_scan::DirectoryScanOperations;
 use std::fs;
-use std::io::{BufWriter, Write};
 use std::path::Path;
 use tempfile::TempDir;
 
-// 修复导入路径：从 impls_extract::impl_extract 导入 ExtractService
 use one_archive_lib::mod_database::database::Database;
-use one_archive_lib::mod_database::traits::{
-    ArchiveAssetOperations, ArchiveMetadataOperations, FileOperations, InitializationOperations,
-    MapFileAssetOperations, RootOperations, ViewOperations,
-};
-use one_archive_lib::mod_extract::impls_extract::impl_extract::ExtractService;
-use one_archive_lib::mod_extract::models::{ExtractProgress, ExtractTask};
-use one_archive_lib::mod_extract::traits_extract::ExtractOperations;
+use one_archive_lib::mod_database::trait_database::InitializationOperations;
+use one_archive_lib::mod_extract::impl_extract::ExtractService;
+use one_archive_lib::mod_extract::model_extract::ExtractTask;
+use one_archive_lib::mod_extract::trait_extract::ExtractOperations;
 // 添加归档相关的导入
-use one_archive_lib::mod_archive::impls_archive::archive_in_impl::ArchiveInServices;
-use one_archive_lib::mod_archive::traits_archive::{ArchiveContext, ArchiveOperations};
+use one_archive_lib::mod_archive::impl_archive::ArchiveInServices;
+use one_archive_lib::mod_archive::trait_archive::{ArchiveContext, ArchiveOperations};
 
 #[test]
 fn test_extract_archive_integration() -> Result<(), Box<dyn std::error::Error>> {
@@ -61,7 +57,7 @@ fn test_extract_archive_integration() -> Result<(), Box<dyn std::error::Error>> 
 
     // 模拟已存档的文件（创建数据库记录）
     setup_test_archive_data(&test_source_dir, &test_archive_dir, &database)?;
-    info!("测试数据库已存档数据初始化完成, 开始测试解档...");
+    info!("测试数据库已存档数据初始化完成，开始测试解档...");
 
     // 执行解档操作
     let extract_service = ExtractService::new();
@@ -76,12 +72,12 @@ fn test_extract_archive_integration() -> Result<(), Box<dyn std::error::Error>> 
 
     // 验证解档结果
     assert!(progress.completed, "解档应该完成");
-    // 修改期望值为3，因为有3个文件需要解档（test1.txt, test2.txt, subdir/subfile.txt）
-    assert_eq!(progress.total_files, 3, "应该有3个文件需要解档");
-    assert_eq!(progress.processed_files, 3, "应该处理了3个文件");
+    // 修改期望值为 3，因为有 3 个文件需要解档（test1.txt, test2.txt, subdir/subfile.txt）
+    assert_eq!(progress.total_files, 3, "应该有 3 个文件需要解档");
+    assert_eq!(progress.processed_files, 3, "应该处理了 3 个文件");
     assert!(
         progress.error.is_none(),
-        "解档过程中不应该有错误，但出现了错误: {:?}",
+        "解档过程中不应该有错误，但出现了错误：{:?}",
         progress.error
     );
 
@@ -91,7 +87,6 @@ fn test_extract_archive_integration() -> Result<(), Box<dyn std::error::Error>> 
     Ok(())
 }
 
-// ... existing code ...
 /// 设置测试用的存档数据
 fn setup_test_archive_data(
     source_dir: &Path,
@@ -99,14 +94,13 @@ fn setup_test_archive_data(
     database: &Database,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 首先扫描并保存目录结构到数据库
-    use one_archive_lib::mod_archive::impls_archive::implementation::ArchiveServices;
-    let archive_service = ArchiveServices::new();
+    let scan_service = ScanServices::new();
 
     // 扫描目录并保存到数据库
-    archive_service.scan_and_save_directory_with_events(
+    scan_service.scan_and_save_directory_with_events(
         source_dir,
         database,
-        None::<fn(mod_archive::models::ScanProgress)>,
+        None::<fn(ScanProgress)>,
     )?;
 
     // 然后执行归档操作
@@ -205,9 +199,9 @@ fn test_extract_with_overwrite_option() -> Result<(), Box<dyn std::error::Error>
 
     // 验证解档结果
     assert!(progress.completed, "解档应该完成");
-    // 修改期望值为1，因为setup_test_archive_data只创建了一个资产记录
-    assert_eq!(progress.total_files, 1, "应该有1个文件需要解档");
-    assert_eq!(progress.processed_files, 1, "应该处理了1个文件");
+    // 修改期望值为 1，因为 setup_test_archive_data 只创建了一个资产记录
+    assert_eq!(progress.total_files, 1, "应该有 1 个文件需要解档");
+    assert_eq!(progress.processed_files, 1, "应该处理了 1 个文件");
 
     // 验证已存在的文件没有被覆盖
     let existing_content = fs::read_to_string(test_extract_dir.join("existing_file.txt"))?;
@@ -250,7 +244,7 @@ fn test_extract_nonexistent_archive() -> Result<(), Box<dyn std::error::Error>> 
     // 验证应该返回错误
     assert!(result.is_err(), "应该返回错误，因为存档不存在");
     // assert!(
-    //     result.unwrap_err().to_string().contains("未找到存档ID"),
+    //     result.unwrap_err().to_string().contains("未找到存档 ID"),
     //     "错误信息应该提示存档不存在"
     // );
 
