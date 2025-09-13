@@ -3,25 +3,28 @@ use std::fs;
 use std::io::Write;
 use tempfile::TempDir;
 
+use one_archive_lib::mod_archive::impls_archive::implementation::ArchiveServices;
 use one_archive_lib::mod_archive::models::ScanProgress;
 use one_archive_lib::mod_archive::traits::DirectoryScanOperations;
 use one_archive_lib::mod_archive::traits::DirectoryStatisticsOperations;
-use one_archive_lib::mod_archive::impls_archive::implementation::ArchiveServices;
+use one_archive_lib::mod_database::constants::{DirectoryStatus, FileStatus, RootStatus};
 use one_archive_lib::mod_database::database::Database;
-use one_archive_lib::mod_database::traits::{
-    DirectoryOperations, FileOperations, InitializationOperations, RootOperations,
-    ViewOperations,
-};
-use one_archive_lib::mod_database::constants::{
-    DirectoryStatus, FileStatus, RootStatus,
-};
 use one_archive_lib::mod_database::schema::InfoFile;
+use one_archive_lib::mod_database::traits::{
+    DirectoryOperations, FileOperations, InitializationOperations, RootOperations, ViewOperations,
+};
 
 // 进度回调函数
 fn progress_callback(progress: ScanProgress) {
     println!("Progress: {:.2}% - {}", progress.progress, progress.message);
 }
 
+/**
+ * 测试目录统计功能
+   - 基本目录结构统计
+   - 空目录统计
+   - 嵌套目录结构统计
+ */
 #[test]
 fn test_get_directory_statistics() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志记录器
@@ -64,10 +67,20 @@ fn test_get_directory_statistics() -> Result<(), Box<dyn std::error::Error>> {
     let stats = archive_service.get_directory_statistics(root_path)?;
 
     // 验证统计结果
-    assert_eq!(stats.total_size, 13 + 15 + 23, "总大小应该等于所有文件大小之和");
-    assert_eq!(stats.directory_count, 4, "应该有4个目录 (dir1, dir2, subdir, 根目录)");
-    assert_eq!(stats.file_count, 3, "应该有3个文件");
-    assert_eq!(stats.max_depth, 3, "最大深度应该是3 (根目录->dir1->subdir)");
+    assert_eq!(
+        stats.total_size,
+        13 + 15 + 23,
+        "总大小应该等于所有文件大小之和"
+    );
+    assert_eq!(
+        stats.directory_count, 4,
+        "应该有 4 个目录 (dir1, dir2, subdir, 根目录)"
+    );
+    assert_eq!(stats.file_count, 3, "应该有 3 个文件");
+    assert_eq!(
+        stats.max_depth, 3,
+        "最大深度应该是 3 (根目录->dir1->subdir)"
+    );
 
     println!("目录统计信息测试通过！");
     Ok(())
@@ -91,10 +104,10 @@ fn test_get_directory_statistics_empty_dir() -> Result<(), Box<dyn std::error::E
     let stats = archive_service.get_directory_statistics(root_path)?;
 
     // 验证统计结果
-    assert_eq!(stats.total_size, 0, "空目录总大小应该为0");
+    assert_eq!(stats.total_size, 0, "空目录总大小应该为 0");
     assert_eq!(stats.directory_count, 1, "应该只有根目录");
     assert_eq!(stats.file_count, 0, "应该没有文件");
-    assert_eq!(stats.max_depth, 0, "空目录最大深度应该为0");
+    assert_eq!(stats.max_depth, 0, "空目录最大深度应该为 0");
 
     println!("空目录统计信息测试通过！");
     Ok(())
@@ -136,15 +149,29 @@ fn test_get_directory_statistics_nested_structure() -> Result<(), Box<dyn std::e
     let stats = archive_service.get_directory_statistics(root_path)?;
 
     // 验证统计结果
-    assert_eq!(stats.total_size, 4 + 6 + 6 + 6, "总大小应该等于所有文件大小之和");
-    assert_eq!(stats.directory_count, 4, "应该有4个目录 (level1, level2, level3, 根目录)");
-    assert_eq!(stats.file_count, 4, "应该有4个文件");
-    assert_eq!(stats.max_depth, 4, "最大深度应该是4 (根目录->level1->level2->level3)");
+    assert_eq!(
+        stats.total_size,
+        4 + 6 + 6 + 6,
+        "总大小应该等于所有文件大小之和"
+    );
+    assert_eq!(
+        stats.directory_count, 4,
+        "应该有 4 个目录 (level1, level2, level3, 根目录)"
+    );
+    assert_eq!(stats.file_count, 4, "应该有 4 个文件");
+    assert_eq!(
+        stats.max_depth, 4,
+        "最大深度应该是 4 (根目录->level1->level2->level3)"
+    );
 
     println!("嵌套目录统计信息测试通过！");
     Ok(())
 }
-
+/**
+ * 测试首次扫描功能
+   - 验证新创建记录的状态为 WaitToArchive
+   - 验证数据库记录正确性
+ */
 #[test]
 fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志记录器
@@ -193,7 +220,11 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
 
     // 执行扫描和保存操作
     let archive_service = ArchiveServices::new();
-    let result = archive_service.scan_and_save_directory_with_events(root_path, &database, Some(progress_callback));
+    let result = archive_service.scan_and_save_directory_with_events(
+        root_path,
+        &database,
+        Some(progress_callback),
+    );
 
     // 验证结果
     // 修改这里，让错误信息能够正确显示
@@ -223,7 +254,11 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
     assert_eq!(stored_path, actual_path.trim_start_matches(r"\\?\"));
 
     // 验证根目录状态（首次扫描应为 WaitToArchive）
-    assert_eq!(root.status, RootStatus::WaitToArchive, "根目录状态应该是 WaitToArchive");
+    assert_eq!(
+        root.status,
+        RootStatus::WaitToArchive,
+        "根目录状态应该是 WaitToArchive"
+    );
 
     // 验证目录数量
     let directories = database.find_directories_by_status_and_root_id(root.id.unwrap(), None)?;
@@ -235,7 +270,11 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
 
     // 验证每个目录的状态（首次扫描应为 WaitToArchive）
     for dir in &directories {
-        assert_eq!(dir.status, DirectoryStatus::WaitToArchive, "所有目录状态应该是 WaitToArchive");
+        assert_eq!(
+            dir.status,
+            DirectoryStatus::WaitToArchive,
+            "所有目录状态应该是 WaitToArchive"
+        );
     }
 
     // 验证文件数量
@@ -244,14 +283,22 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
 
     // 验证每个文件的状态（首次扫描应为 WaitToArchive）
     for file in &files {
-        assert_eq!(file.status, FileStatus::WaitToArchive, "所有文件状态应该是 WaitToArchive");
+        assert_eq!(
+            file.status,
+            FileStatus::WaitToArchive,
+            "所有文件状态应该是 WaitToArchive"
+        );
     }
 
     // 验证特定目录存在
     let dir1_record = database.find_directory_by_path(root.id.unwrap(), "dir1")?;
     assert!(dir1_record.is_some(), "dir1 应该存在于数据库中");
     if let Some(ref dir) = dir1_record {
-        assert_eq!(dir.status, DirectoryStatus::WaitToArchive, "dir1 状态应该是 WaitToArchive");
+        assert_eq!(
+            dir.status,
+            DirectoryStatus::WaitToArchive,
+            "dir1 状态应该是 WaitToArchive"
+        );
     }
 
     // 尝试不同的路径格式查找 subdir
@@ -262,7 +309,11 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
     let subdir_record = subdir_record_backslash.or(subdir_record_slash);
     assert!(subdir_record.is_some(), "dir1/subdir 应该存在于数据库中");
     if let Some(ref dir) = subdir_record {
-        assert_eq!(dir.status, DirectoryStatus::WaitToArchive, "subdir 状态应该是 WaitToArchive");
+        assert_eq!(
+            dir.status,
+            DirectoryStatus::WaitToArchive,
+            "subdir 状态应该是 WaitToArchive"
+        );
     }
 
     // 验证特定文件存在
@@ -270,7 +321,11 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
         let files_in_dir1 = database.find_view_files_by_directory_id(dir1_info.id.unwrap())?;
         assert_eq!(files_in_dir1.len(), 1, "dir1 中应该有 1 个文件");
         assert_eq!(files_in_dir1[0].file_name, "file2.txt");
-        assert_eq!(files_in_dir1[0].file_status, FileStatus::WaitToArchive.as_str(), "file2.txt 状态应该是 WaitToArchive");
+        assert_eq!(
+            files_in_dir1[0].file_status,
+            FileStatus::WaitToArchive.as_str(),
+            "file2.txt 状态应该是 WaitToArchive"
+        );
     }
 
     // 验证根目录中的文件
@@ -281,15 +336,27 @@ fn test_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::
         let files_in_root = database.find_view_files_by_directory_id(root_dir_info.id.unwrap())?;
         assert_eq!(files_in_root.len(), 1, "根目录中应该有 1 个文件");
         assert_eq!(files_in_root[0].file_name, "file1.txt");
-        assert_eq!(files_in_root[0].file_status, FileStatus::WaitToArchive.as_str(), "file1.txt 状态应该是 WaitToArchive");
+        assert_eq!(
+            files_in_root[0].file_status,
+            FileStatus::WaitToArchive.as_str(),
+            "file1.txt 状态应该是 WaitToArchive"
+        );
     }
 
     println!("首次扫描测试通过！");
     Ok(())
 }
 
+/**
+ * 测试增量扫描功能
+   - 文件修改检测
+   - 新增文件和目录处理
+   - 文件删除标记处理
+   - 状态正确性验证
+ */
 #[test]
-fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::Error>> {
+fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn std::error::Error>>
+{
     // 初始化日志记录器
     let _ = simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Debug)
@@ -338,7 +405,11 @@ fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn 
     let archive_service = ArchiveServices::new();
 
     // 首次扫描
-    let result1 = archive_service.scan_and_save_directory_with_events(root_path, &database, Some(progress_callback));
+    let result1 = archive_service.scan_and_save_directory_with_events(
+        root_path,
+        &database,
+        Some(progress_callback),
+    );
     assert!(result1.is_ok(), "首次扫描应该成功");
 
     // 验证首次扫描后的状态
@@ -358,48 +429,97 @@ fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn 
     fs::remove_file(&file3_path)?;
 
     // 第二次扫描（增量扫描）
-    let result2 = archive_service.scan_and_save_directory_with_events(root_path, &database, Some(progress_callback));
+    let result2 = archive_service.scan_and_save_directory_with_events(
+        root_path,
+        &database,
+        Some(progress_callback),
+    );
     assert!(result2.is_ok(), "第二次扫描应该成功");
 
     // 验证根目录状态
     let roots = database.find_all_root_info()?;
     assert_eq!(roots.len(), 1, "应该只有一个根目录");
-    assert_eq!(roots[0].status, RootStatus::WaitToArchive, "根目录状态应该是 WaitToArchive");
+    assert_eq!(
+        roots[0].status,
+        RootStatus::WaitToArchive,
+        "根目录状态应该是 WaitToArchive"
+    );
 
     // 验证目录数量和状态
     let directories = database.find_directories_by_status_and_root_id(root_id, None)?;
-    assert_eq!(directories.len(), 5, "应该有 5 个目录 (dir1, dir2, subdir, new_dir, 根目录)");
+    assert_eq!(
+        directories.len(),
+        5,
+        "应该有 5 个目录 (dir1, dir2, subdir, new_dir, 根目录)"
+    );
 
     // 验证目录状态
     for dir in &directories {
         // 所有目录都应该处于 WaitToArchive 状态（新扫描的）
-        assert_eq!(dir.status, DirectoryStatus::WaitToArchive, "所有目录状态应该是 WaitToArchive");
+        assert_eq!(
+            dir.status,
+            DirectoryStatus::WaitToArchive,
+            "所有目录状态应该是 WaitToArchive"
+        );
     }
 
     // 验证文件数量和状态（获取所有非 WaitToDelete 状态的文件）
     let all_files = database.find_files_by_status_and_root_id(root_id, None)?;
-    let active_files: Vec<&InfoFile> = all_files.iter()
+    let active_files: Vec<&InfoFile> = all_files
+        .iter()
         .filter(|f| f.status != FileStatus::WaitToDelete)
         .collect();
-    assert_eq!(active_files.len(), 3, "应该有 3 个有效文件 (file1.txt, file2.txt[更新], new_file.txt)");
+    assert_eq!(
+        active_files.len(),
+        3,
+        "应该有 3 个有效文件 (file1.txt, file2.txt[更新], new_file.txt)"
+    );
 
     // 查找特定文件并验证其状态
-    let file1 = all_files.iter().find(|f| f.file_name == "file1.txt").unwrap();
-    let file2 = all_files.iter().find(|f| f.file_name == "file2.txt").unwrap();
-    let file3 = all_files.iter().find(|f| f.file_name == "file3.txt").unwrap();
-    let new_file = all_files.iter().find(|f| f.file_name == "new_file.txt").unwrap();
+    let file1 = all_files
+        .iter()
+        .find(|f| f.file_name == "file1.txt")
+        .unwrap();
+    let file2 = all_files
+        .iter()
+        .find(|f| f.file_name == "file2.txt")
+        .unwrap();
+    let file3 = all_files
+        .iter()
+        .find(|f| f.file_name == "file3.txt")
+        .unwrap();
+    let new_file = all_files
+        .iter()
+        .find(|f| f.file_name == "new_file.txt")
+        .unwrap();
 
     // file1.txt 应该保持 WaitToArchive 状态（根据新的设计，所有扫描的文件都标记为 WaitToArchive）
-    assert_eq!(file1.status, FileStatus::WaitToArchive, "file1.txt 应该是 WaitToArchive 状态");
+    assert_eq!(
+        file1.status,
+        FileStatus::WaitToArchive,
+        "file1.txt 应该是 WaitToArchive 状态"
+    );
 
     // file2.txt 应该是 WaitToArchive 状态（内容更新）
-    assert_eq!(file2.status, FileStatus::WaitToArchive, "file2.txt 应该是 WaitToArchive 状态（内容已更新）");
+    assert_eq!(
+        file2.status,
+        FileStatus::WaitToArchive,
+        "file2.txt 应该是 WaitToArchive 状态（内容已更新）"
+    );
 
     // new_file.txt 应该是 WaitToArchive 状态（新文件）
-    assert_eq!(new_file.status, FileStatus::WaitToArchive, "new_file.txt 应该是 WaitToArchive 状态（新文件）");
+    assert_eq!(
+        new_file.status,
+        FileStatus::WaitToArchive,
+        "new_file.txt 应该是 WaitToArchive 状态（新文件）"
+    );
 
     // file3.txt 应该是 WaitToDelete 状态（已被删除）
-    assert_eq!(file3.status, FileStatus::WaitToDelete, "file3.txt 应该是 WaitToDelete 状态（已被删除）");
+    assert_eq!(
+        file3.status,
+        FileStatus::WaitToDelete,
+        "file3.txt 应该是 WaitToDelete 状态（已被删除）"
+    );
 
     // 验证特定目录存在
     let dir1_record = database.find_directory_by_path(root_id, "dir1")?;
@@ -410,16 +530,26 @@ fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn 
 
     // 验证新目录中的文件
     if let Some(new_dir_info) = new_dir_record {
-        let files_in_new_dir = database.find_view_files_by_directory_id(new_dir_info.id.unwrap())?;
+        let files_in_new_dir =
+            database.find_view_files_by_directory_id(new_dir_info.id.unwrap())?;
         assert_eq!(files_in_new_dir.len(), 1, "new_dir 中应该有 1 个文件");
         assert_eq!(files_in_new_dir[0].file_name, "new_file.txt");
-        assert_eq!(files_in_new_dir[0].file_status, FileStatus::WaitToArchive.as_str(), "new_file.txt 状态应该是 WaitToArchive");
+        assert_eq!(
+            files_in_new_dir[0].file_status,
+            FileStatus::WaitToArchive.as_str(),
+            "new_file.txt 状态应该是 WaitToArchive"
+        );
     }
 
     println!("增量扫描测试通过！");
     Ok(())
 }
 
+/**
+ * 测试多个独立根目录处理
+   - 验证多个根目录可以正确共存
+   - 验证各根目录的数据隔离性
+ */
 #[test]
 fn test_multiple_independent_roots() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志记录器
@@ -430,7 +560,7 @@ fn test_multiple_independent_roots() -> Result<(), Box<dyn std::error::Error>> {
     // 创建两个独立的临时目录用于测试
     let temp_dir1 = TempDir::new()?;
     let root_path1 = temp_dir1.path();
-    
+
     let temp_dir2 = TempDir::new()?;
     let root_path2 = temp_dir2.path();
 
@@ -459,11 +589,19 @@ fn test_multiple_independent_roots() -> Result<(), Box<dyn std::error::Error>> {
     let archive_service = ArchiveServices::new();
 
     // 扫描第一个根目录
-    let result1 = archive_service.scan_and_save_directory_with_events(root_path1, &database, Some(progress_callback));
+    let result1 = archive_service.scan_and_save_directory_with_events(
+        root_path1,
+        &database,
+        Some(progress_callback),
+    );
     assert!(result1.is_ok(), "第一个根目录扫描应该成功");
 
     // 扫描第二个根目录
-    let result2 = archive_service.scan_and_save_directory_with_events(root_path2, &database, Some(progress_callback));
+    let result2 = archive_service.scan_and_save_directory_with_events(
+        root_path2,
+        &database,
+        Some(progress_callback),
+    );
     assert!(result2.is_ok(), "第二个根目录扫描应该成功");
 
     // 验证数据库中的记录
@@ -472,27 +610,40 @@ fn test_multiple_independent_roots() -> Result<(), Box<dyn std::error::Error>> {
 
     // 验证两个根目录状态都为 WaitToArchive
     for root in &roots {
-        assert_eq!(root.status, RootStatus::WaitToArchive, "所有根目录状态应该是 WaitToArchive");
+        assert_eq!(
+            root.status,
+            RootStatus::WaitToArchive,
+            "所有根目录状态应该是 WaitToArchive"
+        );
     }
 
     // 验证每个根目录的目录和文件记录
     for root in &roots {
-        let directories = database.find_directories_by_status_and_root_id(root.id.unwrap(), None)?;
-        // 每个根目录应该有2个目录（自身根目录和一个子目录）
-        assert_eq!(directories.len(), 2, "每个根目录应该有2个目录记录");
-        
+        let directories =
+            database.find_directories_by_status_and_root_id(root.id.unwrap(), None)?;
+        // 每个根目录应该有 2 个目录（自身根目录和一个子目录）
+        assert_eq!(directories.len(), 2, "每个根目录应该有 2 个目录记录");
+
         // 验证目录状态
         for dir in &directories {
-            assert_eq!(dir.status, DirectoryStatus::WaitToArchive, "所有目录状态应该是 WaitToArchive");
+            assert_eq!(
+                dir.status,
+                DirectoryStatus::WaitToArchive,
+                "所有目录状态应该是 WaitToArchive"
+            );
         }
 
         let files = database.find_files_by_status_and_root_id(root.id.unwrap(), None)?;
-        // 每个根目录应该有1个文件
-        assert_eq!(files.len(), 1, "每个根目录应该有1个文件记录");
-        
+        // 每个根目录应该有 1 个文件
+        assert_eq!(files.len(), 1, "每个根目录应该有 1 个文件记录");
+
         // 验证文件状态
         for file in &files {
-            assert_eq!(file.status, FileStatus::WaitToArchive, "所有文件状态应该是 WaitToArchive");
+            assert_eq!(
+                file.status,
+                FileStatus::WaitToArchive,
+                "所有文件状态应该是 WaitToArchive"
+            );
         }
     }
 

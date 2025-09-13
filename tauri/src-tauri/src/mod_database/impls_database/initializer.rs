@@ -62,7 +62,8 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS archive_metadata (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        archive_name TEXT NOT NULL UNIQUE,
+        archive_name TEXT NOT NULL,
+        archive_uri TEXT NOT NULL UNIQUE,
         archive_limit_size INTEGER NOT NULL,
         archive_hash TEXT,
         is_compressed INTEGER NOT NULL DEFAULT 0,
@@ -143,6 +144,7 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
         "CREATE VIEW IF NOT EXISTS view_asset AS
             SELECT
                 am.id as archive_id,
+                am.archive_uri as archive_uri,
                 am.archive_name as archive_name,
                 am.status as archive_status,
                 aa.id as asset_id,

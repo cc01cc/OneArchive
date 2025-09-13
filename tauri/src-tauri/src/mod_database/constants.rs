@@ -65,7 +65,7 @@ pub enum RootStatus {
 impl RootStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            RootStatus::Health => "HEALTH",
+            RootStatus::Health => "Health",
             RootStatus::WaitToScan => "WAIT_TO_SCAN",
             RootStatus::WaitToArchive => "WaitToArchive",
             RootStatus::InScanning => "IN_SCANNING",
@@ -78,7 +78,7 @@ impl RootStatus {
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => RootStatus::Health,
+            "Health" => RootStatus::Health,
             "WAIT_TO_SCAN" => RootStatus::WaitToScan,
             "WaitToArchive" => RootStatus::WaitToArchive,
             "IN_SCANNING" => RootStatus::InScanning,
@@ -120,7 +120,7 @@ pub enum FileStatus {
 impl FileStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            FileStatus::Health => "HEALTH",
+            FileStatus::Health => "Health",
             FileStatus::WaitToArchive => "WaitToArchive",
             FileStatus::WaitToDelete => "WAIT_TO_DELETE",
             FileStatus::InScanning => "IN_SCANNING",
@@ -132,7 +132,7 @@ impl FileStatus {
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => FileStatus::Health,
+            "Health" => FileStatus::Health,
             "WaitToArchive" => FileStatus::WaitToArchive,
             "WAIT_TO_DELETE" => FileStatus::WaitToDelete,
             "IN_SCANNING" => FileStatus::InScanning,
@@ -173,7 +173,7 @@ pub enum DirectoryStatus {
 impl DirectoryStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            DirectoryStatus::Health => "HEALTH",
+            DirectoryStatus::Health => "Health",
             DirectoryStatus::WaitToArchive => "WaitToArchive",
             DirectoryStatus::WaitToDelete => "WAIT_TO_DELETE",
             DirectoryStatus::InScanning => "IN_SCANNING",
@@ -185,7 +185,7 @@ impl DirectoryStatus {
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => DirectoryStatus::Health,
+            "Health" => DirectoryStatus::Health,
             "WaitToArchive" => DirectoryStatus::WaitToArchive,
             "WAIT_TO_DELETE" => DirectoryStatus::WaitToDelete,
             "IN_SCANNING" => DirectoryStatus::InScanning,
@@ -215,21 +215,21 @@ impl ToSql for DirectoryStatus {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ArchiveStatus {
     Health,
-    UNCOMPLETED,
+    InArchiving,
 }
 
 impl ArchiveStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            ArchiveStatus::Health => "HEALTH",
-            ArchiveStatus::UNCOMPLETED => "UNCOMPLETED",
+            ArchiveStatus::Health => "Health",
+            ArchiveStatus::InArchiving => "InArchiving",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => ArchiveStatus::Health,
-            "UNCOMPLETED" => ArchiveStatus::UNCOMPLETED,
+            "Health" => ArchiveStatus::Health,
+            "InArchiving" => ArchiveStatus::InArchiving,
             _ => ArchiveStatus::Health, // 默认值
         }
     }
@@ -252,23 +252,23 @@ impl ToSql for ArchiveStatus {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AssetStatus {
-    HEALTH,
+    Health,
     WaitToArchive,
 }
 
 impl AssetStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            AssetStatus::HEALTH => "HEALTH",
+            AssetStatus::Health => "Health",
             AssetStatus::WaitToArchive => "WaitToArchive",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => AssetStatus::HEALTH,
+            "Health" => AssetStatus::Health,
             "WaitToArchive" => AssetStatus::WaitToArchive,
-            _ => AssetStatus::HEALTH, // 默认值
+            _ => AssetStatus::Health, // 默认值
         }
     }
 }
@@ -286,64 +286,26 @@ impl ToSql for AssetStatus {
     }
 }
 
-/// 文件卷资源状态枚举
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum FileVolumeAssetStatus {
-    HEALTH,
-    WaitToArchive,
-}
-
-impl FileVolumeAssetStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            FileVolumeAssetStatus::HEALTH => "HEALTH",
-            FileVolumeAssetStatus::WaitToArchive => "WaitToArchive",
-        }
-    }
-
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "HEALTH" => FileVolumeAssetStatus::HEALTH,
-            "WaitToArchive" => FileVolumeAssetStatus::WaitToArchive,
-            _ => FileVolumeAssetStatus::HEALTH, // 默认值
-        }
-    }
-}
-
-impl FromSql for FileVolumeAssetStatus {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s: String = FromSql::column_result(value)?;
-        Ok(FileVolumeAssetStatus::from_str(&s))
-    }
-}
-
-impl ToSql for FileVolumeAssetStatus {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        Ok(ToSqlOutput::from(self.as_str()))
-    }
-}
-
 /// 文件资源状态枚举
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum MapFileAssetStatus {
-    HEALTH,
+    Health,
     WaitToArchive,
 }
 impl MapFileAssetStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            MapFileAssetStatus::HEALTH => "HEALTH",
+            MapFileAssetStatus::Health => "Health",
             MapFileAssetStatus::WaitToArchive => "WaitToArchive",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "HEALTH" => MapFileAssetStatus::HEALTH,
+            "Health" => MapFileAssetStatus::Health,
             "WaitToArchive" => MapFileAssetStatus::WaitToArchive,
-            _ => MapFileAssetStatus::HEALTH, // 默认值
+            _ => MapFileAssetStatus::Health, // 默认值
         }
     }
 }

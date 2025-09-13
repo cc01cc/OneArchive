@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 pub mod mod_archive;
 pub mod mod_database;
+pub mod mod_extract;
 
 use mod_database::database::Database;
 use mod_database::traits::{InitializationOperations, RootOperations};

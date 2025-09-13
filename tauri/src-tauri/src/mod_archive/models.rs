@@ -1,6 +1,5 @@
 //! 归档模块数据模型定义
 //! 定义归档功能相关的数据结构
-
 /// 目录统计信息结构体
 #[derive(Debug, Clone)]
 pub struct DirectoryStatistics {

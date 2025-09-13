@@ -1,5 +1,4 @@
-//! 数据库模块
-//! 提供SQLite数据库连接和基本操作功能
+//! 数据库模块，提供 SQLite 数据库连接和基本操作功能
 
 pub mod schema;
 pub mod constants;
