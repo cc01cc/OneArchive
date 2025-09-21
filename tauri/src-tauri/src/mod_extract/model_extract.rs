@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 /// 解档任务参数
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtractTask {
-    /// 存档目录
-    pub archive_directory: String,
     /// Root id
     pub root_id: i64,
     /// 解档目标路径

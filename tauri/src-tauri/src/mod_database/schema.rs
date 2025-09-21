@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::constants::{
-    ArchiveStatus, AssetStatus, DirectoryStatus, FileStatus, MapFileAssetStatus, RootStatus,
+    ArchiveStatus, ChunkStatus, DirectoryStatus, FileStatus, MapFileChunkStatus, RootStatus,
 };
 use rusqlite::{Result as SqliteResult, Row};
 use std::convert::TryFrom;
@@ -173,7 +173,7 @@ impl TryFrom<&Row<'_>> for InfoFile {
     }
 }
 
-/// 存档元数据表
+/// 归档元数据表
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArchiveMetadata {
     pub id: Option<i64>,
@@ -238,41 +238,41 @@ impl TryFrom<&Row<'_>> for ArchiveMetadata {
     }
 }
 
-/// 存档内容表
+/// 归档内容表
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ArchiveAsset {
+pub struct ArchiveChunk {
     pub id: Option<i64>,
     pub archive_id: i64,
-    pub asset_name: String,
-    pub asset_size: i64,
-    pub asset_hash: String,
+    pub chunk_name: String,
+    pub chunk_size: i64,
+    pub chunk_hash: String,
     /// 修改时间 (unix 时间戳)
-    pub asset_mtime: i64,
-    pub asset_relative_path: String,
-    pub status: AssetStatus,
+    pub chunk_mtime: i64,
+    pub chunk_relative_path: String,
+    pub status: ChunkStatus,
     pub created_at: Option<i64>,
     pub updated_at: Option<i64>,
 }
 
-impl ArchiveAsset {
-    /// 创建一个新的 ArchiveAsset 实例
+impl ArchiveChunk {
+    /// 创建一个新的 ArchiveChunk 实例
     pub fn new(
         archive_id: i64,
-        asset_name: String,
-        asset_size: i64,
-        asset_hash: String,
-        asset_mtime: i64,
-        asset_relative_path: String,
-        status: AssetStatus,
+        chunk_name: String,
+        chunk_size: i64,
+        chunk_hash: String,
+        chunk_mtime: i64,
+        chunk_relative_path: String,
+        status: ChunkStatus,
     ) -> Self {
         Self {
             id: None,
             archive_id,
-            asset_name,
-            asset_size,
-            asset_hash,
-            asset_mtime,
-            asset_relative_path,
+            chunk_name,
+            chunk_size,
+            chunk_hash,
+            chunk_mtime,
+            chunk_relative_path,
             status,
             created_at: None,
             updated_at: None,
@@ -280,43 +280,42 @@ impl ArchiveAsset {
     }
 }
 
-impl TryFrom<&Row<'_>> for ArchiveAsset {
+impl TryFrom<&Row<'_>> for ArchiveChunk {
     type Error = rusqlite::Error;
     fn try_from(row: &Row) -> SqliteResult<Self> {
-        Ok(ArchiveAsset {
+        Ok(ArchiveChunk {
             id: row.get("id")?,
             archive_id: row.get("archive_id")?,
-            asset_name: row.get("asset_name")?,
-            asset_size: row.get("asset_size")?,
-            asset_hash: row.get("asset_hash")?,
-            asset_mtime: row.get("asset_mtime")?,
-            asset_relative_path: row.get("asset_relative_path")?,
-            status: AssetStatus::from_str(&row.get::<_, String>("status")?),
+            chunk_name: row.get("chunk_name")?,
+            chunk_size: row.get("chunk_size")?,
+            chunk_hash: row.get("chunk_hash")?,
+            chunk_mtime: row.get("chunk_mtime")?,
+            chunk_relative_path: row.get("chunk_relative_path")?,
+            status: ChunkStatus::from_str(&row.get::<_, String>("status")?),
             created_at: row.get("created_at")?,
             updated_at: row.get("updated_at")?,
         })
     }
 }
 
-/// 文件与存档资源映射表
+/// 文件与归档数据块映射表
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MapFileAsset {
+pub struct MapFileChunk {
     pub id: Option<i64>,
     pub file_id: i64,
-    pub asset_id: i64,
+    pub chunk_id: i64,
     pub volume_order: i32,
-    pub status: MapFileAssetStatus,
+    pub status: MapFileChunkStatus,
     pub created_at: Option<i64>,
     pub updated_at: Option<i64>,
 }
 
-impl MapFileAsset {
-    /// 创建一个新的 MapFileAsset 实例
-    pub fn new(file_id: i64, asset_id: i64, volume_order: i32, status: MapFileAssetStatus) -> Self {
+impl MapFileChunk {
+    pub fn new(file_id: i64, chunk_id: i64, volume_order: i32, status: MapFileChunkStatus) -> Self {
         Self {
             id: None,
             file_id,
-            asset_id,
+            chunk_id,
             volume_order,
             status,
             created_at: None,
@@ -325,15 +324,15 @@ impl MapFileAsset {
     }
 }
 
-impl TryFrom<&Row<'_>> for MapFileAsset {
+impl TryFrom<&Row<'_>> for MapFileChunk {
     type Error = rusqlite::Error;
     fn try_from(row: &Row) -> SqliteResult<Self> {
-        Ok(MapFileAsset {
+        Ok(MapFileChunk {
             id: row.get("id")?,
             file_id: row.get("file_id")?,
-            asset_id: row.get("asset_id")?,
+            chunk_id: row.get("chunk_id")?,
             volume_order: row.get("volume_order")?,
-            status: MapFileAssetStatus::from_str(&row.get::<_, String>("status")?),
+            status: MapFileChunkStatus::from_str(&row.get::<_, String>("status")?),
             created_at: row.get("created_at")?,
             updated_at: row.get("updated_at")?,
         })
@@ -379,40 +378,40 @@ impl TryFrom<&Row<'_>> for ViewFile {
         })
     }
 }
-/// 资源列表视图
+/// 数据块列表视图
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ViewAsset {
+pub struct ViewChunk {
     pub archive_id: Option<i64>,
     pub archive_uri: String,
     pub archive_name: String,
     pub archive_status: String,
-    pub asset_id: i64,
-    pub asset_name: String,
-    pub asset_size: i64,
-    pub asset_hash: String,
-    pub asset_mtime: i64,
-    pub asset_relative_path: String,
-    pub asset_status: String,
+    pub chunk_id: i64,
+    pub chunk_name: String,
+    pub chunk_size: i64,
+    pub chunk_hash: String,
+    pub chunk_mtime: i64,
+    pub chunk_relative_path: String,
+    pub chunk_status: String,
     pub file_id: Option<i64>,
     /// 卷序号
     pub volume_order: Option<i32>,
 }
 
-impl TryFrom<&Row<'_>> for ViewAsset {
+impl TryFrom<&Row<'_>> for ViewChunk {
     type Error = rusqlite::Error;
     fn try_from(row: &Row) -> SqliteResult<Self> {
-        Ok(ViewAsset {
+        Ok(ViewChunk {
             archive_id: row.get("archive_id")?,
             archive_uri: row.get("archive_uri")?,
             archive_name: row.get("archive_name")?,
             archive_status: row.get("archive_status")?,
-            asset_id: row.get("asset_id")?,
-            asset_name: row.get("asset_name")?,
-            asset_size: row.get("asset_size")?,
-            asset_hash: row.get("asset_hash")?,
-            asset_mtime: row.get("asset_mtime")?,
-            asset_relative_path: row.get("asset_relative_path")?,
-            asset_status: row.get("asset_status")?,
+            chunk_id: row.get("chunk_id")?,
+            chunk_name: row.get("chunk_name")?,
+            chunk_size: row.get("chunk_size")?,
+            chunk_hash: row.get("chunk_hash")?,
+            chunk_mtime: row.get("chunk_mtime")?,
+            chunk_relative_path: row.get("chunk_relative_path")?,
+            chunk_status: row.get("chunk_status")?,
             file_id: row.get("file_id")?,
             volume_order: row.get("volume_order")?,
         })

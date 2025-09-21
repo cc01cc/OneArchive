@@ -8,11 +8,11 @@ pub enum DatabaseTableName {
     InfoDirectory,
     InfoFile,
     ArchiveMetadata,
-    ArchiveAsset,
-    MapFileAsset,
+    ArchiveChunk,
+    MapFileChunk,
     DirectoryTree,
     ViewFile,
-    ViewAsset,
+    ViewChunk,
 }
 
 impl DatabaseTableName {
@@ -23,11 +23,11 @@ impl DatabaseTableName {
             DatabaseTableName::InfoDirectory => "info_directory",
             DatabaseTableName::InfoFile => "info_file",
             DatabaseTableName::ArchiveMetadata => "archive_metadata",
-            DatabaseTableName::ArchiveAsset => "archive_asset",
-            DatabaseTableName::MapFileAsset => "map_file_asset",
+            DatabaseTableName::ArchiveChunk => "archive_chunk",
+            DatabaseTableName::MapFileChunk => "map_file_chunk",
             DatabaseTableName::DirectoryTree => "directory_tree",
             DatabaseTableName::ViewFile => "view_file",
-            DatabaseTableName::ViewAsset => "view_asset",
+            DatabaseTableName::ViewChunk => "view_chunk",
         }
     }
 
@@ -38,11 +38,11 @@ impl DatabaseTableName {
             "info_directory" => Some(DatabaseTableName::InfoDirectory),
             "info_file" => Some(DatabaseTableName::InfoFile),
             "archive_metadata" => Some(DatabaseTableName::ArchiveMetadata),
-            "archive_asset" => Some(DatabaseTableName::ArchiveAsset),
-            "map_file_asset" => Some(DatabaseTableName::MapFileAsset),
+            "archive_chunk" => Some(DatabaseTableName::ArchiveChunk),
+            "map_file_chunk" => Some(DatabaseTableName::MapFileChunk),
             "directory_tree" => Some(DatabaseTableName::DirectoryTree),
             "view_file" => Some(DatabaseTableName::ViewFile),
-            "view_asset" => Some(DatabaseTableName::ViewAsset),
+            "view_chunk" => Some(DatabaseTableName::ViewChunk),
             _ => None,
         }
     }
@@ -248,74 +248,74 @@ impl ToSql for ArchiveStatus {
     }
 }
 
-/// 资源状态枚举
+/// 数据块状态枚举
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum AssetStatus {
+pub enum ChunkStatus {
     Health,
     WaitToArchive,
 }
 
-impl AssetStatus {
+impl ChunkStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            AssetStatus::Health => "Health",
-            AssetStatus::WaitToArchive => "WaitToArchive",
+            ChunkStatus::Health => "Health",
+            ChunkStatus::WaitToArchive => "WaitToArchive",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "Health" => AssetStatus::Health,
-            "WaitToArchive" => AssetStatus::WaitToArchive,
-            _ => AssetStatus::Health, // 默认值
+            "Health" => ChunkStatus::Health,
+            "WaitToArchive" => ChunkStatus::WaitToArchive,
+            _ => ChunkStatus::Health, // 默认值
         }
     }
 }
 
-impl FromSql for AssetStatus {
+impl FromSql for ChunkStatus {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         let s: String = FromSql::column_result(value)?;
-        Ok(AssetStatus::from_str(&s))
+        Ok(ChunkStatus::from_str(&s))
     }
 }
 
-impl ToSql for AssetStatus {
+impl ToSql for ChunkStatus {
     fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
         Ok(ToSqlOutput::from(self.as_str()))
     }
 }
 
-/// 文件资源状态枚举
+/// 文件数据块状态枚举
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum MapFileAssetStatus {
+pub enum MapFileChunkStatus {
     Health,
     WaitToArchive,
 }
-impl MapFileAssetStatus {
+impl MapFileChunkStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            MapFileAssetStatus::Health => "Health",
-            MapFileAssetStatus::WaitToArchive => "WaitToArchive",
+            MapFileChunkStatus::Health => "Health",
+            MapFileChunkStatus::WaitToArchive => "WaitToArchive",
         }
     }
 
     pub fn from_str(s: &str) -> Self {
         match s {
-            "Health" => MapFileAssetStatus::Health,
-            "WaitToArchive" => MapFileAssetStatus::WaitToArchive,
-            _ => MapFileAssetStatus::Health, // 默认值
+            "Health" => MapFileChunkStatus::Health,
+            "WaitToArchive" => MapFileChunkStatus::WaitToArchive,
+            _ => MapFileChunkStatus::Health, // 默认值
         }
     }
 }
-impl FromSql for MapFileAssetStatus {
+impl FromSql for MapFileChunkStatus {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         let s: String = FromSql::column_result(value)?;
-        Ok(MapFileAssetStatus::from_str(&s))
+        Ok(MapFileChunkStatus::from_str(&s))
     }
 }
-impl ToSql for MapFileAssetStatus {
+impl ToSql for MapFileChunkStatus {
     fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
         Ok(ToSqlOutput::from(self.as_str()))
     }

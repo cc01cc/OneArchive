@@ -1,3 +1,7 @@
+<!-- TODO 存在的问题
+- 扫描页面的功能, 需要调整, 纯扫描对于软件并无用处, 因为归档时为了保证数据最新, 会重新扫描
+-->
+
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
@@ -9,12 +13,16 @@ import Button from "primevue/button";
 import Message from "primevue/message";
 import ProgressBar from "primevue/progressbar";
 import Checkbox from "primevue/checkbox";
+import { useGlobalStore } from "../store/global";
+import { useToast } from 'primevue/usetoast';
+
+const toast = useToast();
+const globalStore = useGlobalStore();
 
 // 表单数据
 const scanConfig = ref({
   rootDir: "",
-  workspaceDir: "",
-  dbPath: "",
+  dbPath: globalStore.dbPath || "",
   overwrite: false
 });
 
@@ -37,10 +45,6 @@ const validateForm = () => {
     newErrors.rootDir = "根目录不能为空";
   }
 
-  if (!scanConfig.value.workspaceDir) {
-    newErrors.workspaceDir = "工作目录不能为空";
-  }
-
   if (!scanConfig.value.dbPath) {
     newErrors.dbPath = "数据库路径不能为空";
   }
@@ -60,19 +64,6 @@ const selectRootDirectory = async () => {
   }
 };
 
-// 选择工作目录
-const selectWorkspaceDirectory = async () => {
-  const selected = await open({
-    directory: true,
-  });
-
-  if (selected) {
-    scanConfig.value.workspaceDir = selected;
-    // 自动生成默认数据库路径
-    scanConfig.value.dbPath = selected + "/archive.db";
-  }
-};
-
 // 选择数据库文件
 const selectDatabaseFile = async () => {
   const selected = await open({
@@ -84,6 +75,7 @@ const selectDatabaseFile = async () => {
 
   if (selected) {
     scanConfig.value.dbPath = selected;
+    globalStore.setDbPath(selected);
   }
 };
 
@@ -108,6 +100,7 @@ const startScan = async () => {
   } catch (error: any) {
     statusMessage.value = `扫描失败：${error}`;
     console.error("Scan error:", error);
+    toast.add({ severity: 'error', summary: '扫描失败', detail: error.message || error.toString(), life: 5000 });
   } finally {
     isScanning.value = false;
   }
@@ -115,7 +108,7 @@ const startScan = async () => {
 
 // 设置进度监听器
 const setupProgressListener = async () => {
-  // 监听scan-progress事件
+  // 监听 scan-progress 事件
   unlisten = await listen('scan-progress', (event) => {
     const progressData = event.payload as {
       processed: number;
@@ -125,7 +118,7 @@ const setupProgressListener = async () => {
     };
 
     // 更新进度条和状态信息
-    progress.value = progressData.progress;
+    progress.value = Math.round((progressData.processed / progressData.total) * 100);
     statusMessage.value = progressData.message;
   });
 };
@@ -138,29 +131,28 @@ const cleanupProgressListener = () => {
   }
 };
 
+// 组件挂载时设置监听器
+onMounted(() => {
+  setupProgressListener();
+});
+
+// 组件卸载时清理监听器
+onUnmounted(() => {
+  cleanupProgressListener();
+});
+
 // 重置表单
 const resetForm = () => {
   scanConfig.value = {
     rootDir: "",
-    workspaceDir: "",
-    dbPath: "",
+    dbPath: globalStore.dbPath || "",
     overwrite: false
   };
   errors.value = {};
   progress.value = 0;
   statusMessage.value = "准备就绪";
 };
-
-// 组件挂载和卸载时的处理
-onMounted(async () => {
-  await setupProgressListener();
-});
-
-onUnmounted(() => {
-  cleanupProgressListener();
-});
 </script>
-
 <template>
   <div class="container mx-auto p-4">
     <h1 class="text-3xl font-bold mb-6 text-center text-primary-700">扫描根目录</h1>
@@ -175,70 +167,53 @@ onUnmounted(() => {
           <div class="field">
             <label for="rootDir" class="block text-sm font-medium mb-2">根目录 *</label>
             <div class="flex gap-2">
-              <InputText id="rootDir" v-model="scanConfig.rootDir" placeholder="选择要扫描的根目录" :disabled="isScanning"
-                class="flex-1" :class="{ 'p-invalid': errors.rootDir }" />
-              <Button label="浏览" @click="selectRootDirectory" :disabled="isScanning" />
+              <InputText id="rootDir" v-model="scanConfig.rootDir" placeholder="选择要扫描的根目录"
+                :class="{ 'p-invalid': errors.rootDir }" class="flex-1" />
+              <Button @click="selectRootDirectory" label="浏览" />
             </div>
-            <Message v-if="errors.rootDir" severity="error" size="small">{{ errors.rootDir }}</Message>
-          </div>
-
-          <!-- 工作目录 -->
-          <div class="field">
-            <label for="workspaceDir" class="block text-sm font-medium mb-2">工作目录 *</label>
-            <div class="flex gap-2">
-              <InputText id="workspaceDir" v-model="scanConfig.workspaceDir" placeholder="选择工作目录" :disabled="isScanning"
-                class="flex-1" :class="{ 'p-invalid': errors.workspaceDir }" />
-              <Button label="浏览" @click="selectWorkspaceDirectory" :disabled="isScanning" />
-            </div>
-            <Message v-if="errors.workspaceDir" severity="error" size="small">{{ errors.workspaceDir }}</Message>
-            <small class="block text-gray-500 mt-1">用于存放数据库文件的工作目录</small>
+            <Message v-if="errors.rootDir" severity="error" size="small" variant="simple">{{ errors.rootDir }}</Message>
           </div>
 
           <!-- 数据库路径 -->
           <div class="field md:col-span-2">
-            <label for="dbPath" class="block text-sm font-medium mb-2">数据库路径</label>
+            <label for="dbPath" class="block text-sm font-medium mb-2">数据库路径 *</label>
             <div class="flex gap-2">
-              <InputText id="dbPath" v-model="scanConfig.dbPath" placeholder="数据库文件路径" :disabled="isScanning"
-                class="flex-1" :class="{ 'p-invalid': errors.dbPath }" />
-              <Button label="浏览" @click="selectDatabaseFile" :disabled="isScanning" />
+              <InputText id="dbPath" v-model="scanConfig.dbPath" placeholder="选择或输入数据库路径"
+                :class="{ 'p-invalid': errors.dbPath }" class="flex-1" />
+              <Button @click="selectDatabaseFile" label="浏览" />
             </div>
-            <Message v-if="errors.dbPath" severity="error" size="small">{{ errors.dbPath }}</Message>
-            <small class="block text-gray-500 mt-1">系统将根据工作目录自动生成，也可手动指定</small>
+            <Message v-if="errors.dbPath" severity="error" size="small" variant="simple">{{ errors.dbPath }}</Message>
           </div>
 
           <!-- 覆盖选项 -->
           <div class="field md:col-span-2">
-            <div class="flex items-center gap-2">
-              <Checkbox id="overwrite" v-model="scanConfig.overwrite" :disabled="isScanning" binary />
-              <label for="overwrite" class="text-sm font-medium">覆盖已存在的数据</label>
+            <div class="flex items-center">
+              <Checkbox id="overwrite" v-model="scanConfig.overwrite" :binary="true" class="mr-2" />
+              <label for="overwrite" class="text-sm">覆盖已有数据</label>
             </div>
-            <small class="block text-gray-500 mt-1">勾选此项将覆盖数据库中已存在的相同路径的数据</small>
           </div>
         </div>
-
-        <!-- 操作按钮 -->
-        <div class="flex justify-center gap-4 mt-8">
-          <Button label="开始扫描" icon="pi pi-search" @click="startScan" :disabled="isScanning" severity="primary" />
-          <Button label="重置" icon="pi pi-refresh" @click="resetForm" :disabled="isScanning" severity="secondary" />
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button label="重置" severity="secondary" @click="resetForm" :disabled="isScanning" />
+          <Button label="开始扫描" @click="startScan" :loading="isScanning" />
         </div>
       </template>
     </Card>
 
-    <!-- 进度显示 -->
-    <Card v-if="isScanning || progress > 0" class="mt-6">
+    <!-- 进度和状态显示 -->
+    <Card class="mt-6" v-if="isScanning || progress > 0">
       <template #title>
         <h2 class="text-xl font-semibold">扫描进度</h2>
       </template>
       <template #content>
-        <div class="space-y-4">
-          <ProgressBar :value="progress" />
-          <p class="text-center">{{ statusMessage }}</p>
-        </div>
+        <ProgressBar :value="progress" :showValue="true" />
+        <p class="mt-2 text-center">{{ statusMessage }}</p>
       </template>
     </Card>
   </div>
 </template>
-
 <style scoped>
 .field {
   margin-bottom: 1rem;

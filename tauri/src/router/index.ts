@@ -16,19 +16,48 @@
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
-import ScanPage from '../pages/scan.vue'
+import DefaultLayout from '../layouts/DefaultLayout.vue'
+import ConfigPage from '../pages/Config.vue'
 
 const routes = [
     {
         path: '/',
-        redirect: '/scan'
+        redirect: '/task-center'
+    },
+
+    {
+        path: '/config',
+        name: 'Config',
+        component: ConfigPage
     },
     {
-        path: '/scan',
-        name: 'Scan',
-        component: ScanPage
-    },
+        path: '/',
+        component: DefaultLayout,
+        children: [
+            {
+                path: 'task-center',
+                name: 'TaskCenter',
+                component: () => import('../pages/TaskCenter.vue')
+            },
+            {
+                path: 'scan',
+                name: 'Scan',
+                component: () => import('../pages/Scan.vue')
+            },
+            {
+                path: 'resource-manager',
+                name: 'ResourceManager',
+                component: () => import('../pages/ResourceManager.vue')
+            },
+            {
+                path: '/workspace',
+                name: 'Workspace',
+                component: () => import('../pages/Workspace.vue')
+            }
+        ]
+    }
 ]
+
 
 const router = createRouter({
     history: createWebHistory(),

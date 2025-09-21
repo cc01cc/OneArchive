@@ -58,7 +58,7 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
     )?;
     info!("已创建 info_file 表");
 
-    // 创建存档元数据表 archive_metadata
+    // 创建归档元数据表 archive_metadata
     conn.execute(
         "CREATE TABLE IF NOT EXISTS archive_metadata (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,16 +78,16 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
     )?;
     info!("已创建 archive_metadata 表");
 
-    // 创建存档内容表 archive_asset
+    // 创建归档内容表 archive_chunk
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS archive_asset (
+        "CREATE TABLE IF NOT EXISTS archive_chunk (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         archive_id INTEGER NOT NULL,
-        asset_name TEXT NOT NULL UNIQUE,
-        asset_size INTEGER NOT NULL DEFAULT 0,
-        asset_hash TEXT NOT NULL UNIQUE,
-        asset_mtime INTEGER NOT NULL DEFAULT 0,
-        asset_relative_path TEXT NOT NULL DEFAULT './',
+        chunk_name TEXT NOT NULL UNIQUE,
+        chunk_size INTEGER NOT NULL DEFAULT 0,
+        chunk_hash TEXT NOT NULL UNIQUE,
+        chunk_mtime INTEGER NOT NULL DEFAULT 0,
+        chunk_relative_path TEXT NOT NULL DEFAULT './',
         status TEXT NOT NULL DEFAULT 'HEALTH',
         created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
         updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
@@ -95,25 +95,25 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
     )",
         [],
     )?;
-    info!("已创建 archive_asset 表");
+    info!("已创建 archive_chunk 表");
 
-    // 创建文件与存档资源表 map_file_asset
+    // 创建文件与归档数据块表 map_file_chunk
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS map_file_asset (
+        "CREATE TABLE IF NOT EXISTS map_file_chunk (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         file_id INTEGER NOT NULL,
-        asset_id INTEGER NOT NULL,
+        chunk_id INTEGER NOT NULL,
         volume_order INTEGER NOT NULL DEFAULT 1,
         status TEXT NOT NULL DEFAULT 'HEALTH',
         created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
         updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
         FOREIGN KEY (file_id) REFERENCES info_file(id) ON DELETE CASCADE,
-        FOREIGN KEY (asset_id) REFERENCES archive_asset(id) ON DELETE CASCADE,
-        UNIQUE(file_id, asset_id)
+        FOREIGN KEY (chunk_id) REFERENCES archive_chunk(id) ON DELETE CASCADE,
+        UNIQUE(file_id, chunk_id)
     )",
         [],
     )?;
-    info!("已创建 map_file_asset 表");
+    info!("已创建 map_file_chunk 表");
 
     // 创建文件列表视图 view_file
     conn.execute(
@@ -139,29 +139,29 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
     )?;
     info!("已创建 view_file 视图");
 
-    // 创建资源列表视图 view_asset
+    // 创建数据块列表视图 view_chunk
     conn.execute(
-        "CREATE VIEW IF NOT EXISTS view_asset AS
+        "CREATE VIEW IF NOT EXISTS view_chunk AS
             SELECT
                 am.id as archive_id,
                 am.archive_uri as archive_uri,
                 am.archive_name as archive_name,
                 am.status as archive_status,
-                aa.id as asset_id,
-                aa.asset_name,
-                aa.asset_size,
-                aa.asset_hash,
-                aa.asset_mtime,
-                aa.asset_relative_path as asset_relative_path,
-                aa.status as asset_status,
+                aa.id as chunk_id,
+                aa.chunk_name,
+                aa.chunk_size,
+                aa.chunk_hash,
+                aa.chunk_mtime,
+                aa.chunk_relative_path as chunk_relative_path,
+                aa.status as chunk_status,
                 fva.file_id,
                 fva.volume_order
             FROM archive_metadata am
-            JOIN archive_asset aa ON am.id = aa.archive_id
-            LEFT JOIN map_file_asset fva ON aa.id = fva.asset_id",
+            JOIN archive_chunk aa ON am.id = aa.archive_id
+            LEFT JOIN map_file_chunk fva ON aa.id = fva.chunk_id",
         [],
     )?;
-    info!("已创建 view_asset 视图");
+    info!("已创建 view_chunk 视图");
 
     Ok(())
 }

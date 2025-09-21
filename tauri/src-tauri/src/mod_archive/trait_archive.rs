@@ -1,5 +1,5 @@
-//! 存档操作 trait 定义
-//! 定义存档操作的接口
+//! 归档操作 trait 定义
+//! 定义归档操作的接口
 
 use anyhow::Result as AnyResult;
 use std::fmt;
@@ -7,12 +7,31 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use tar::Builder;
 
-use crate::mod_database::schema::ViewFile;
 use crate::mod_database::trait_database::{
-    ArchiveAssetOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations, MapFileAssetOperations, RootOperations, StatusOperations, ViewOperations
+    ArchiveChunkOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations,
+    MapFileChunkOperations, RootOperations, StatusOperations, ViewOperations,
 };
 
-/// 存档上下文，用于管理当前存档过程中的状态
+/// 归档进度信息
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ArchiveProgress {
+    /// 总文件数
+    pub total_files: usize,
+    /// 已处理文件数
+    pub processed_files: usize,
+    /// 已处理字节数
+    pub processed_bytes: u64,
+    /// 总字节数
+    pub total_bytes: u64,
+    /// 当前正在处理的文件
+    pub current_file: Option<String>,
+    /// 是否完成
+    pub completed: bool,
+    /// 错误信息（如果有）
+    pub error: Option<String>,
+}
+
+/// 归档上下文，用于管理当前归档过程中的状态
 pub struct ArchiveContext {
     pub archive_file_prefix: String,
     pub archive_directory: String,
@@ -65,37 +84,40 @@ impl ArchiveContext {
     }
 
     pub fn need_new_archive(&self) -> bool {
-        // 如果没有当前归档ID，或者当前归档大小加上tar文件头大小超过了限制，则需要创建新归档
+        // 如果没有当前归档 ID，或者当前归档大小加上 tar 文件头大小超过了限制，则需要创建新归档
         self.current_archive_id.is_none()
             || self.current_archive_size + 512 >= self.archive_limit_size
     }
 }
 
-/// 存档操作 trait
+/// 归档操作 trait
 pub trait ArchiveOperations {
-    /// 将指定根目录下的所有文件添加到存档中
+    /// 将指定根目录下的所有文件添加到归档中
     /// 对应 Java 中 ArchiveIn.java 的 archiveFileInDb 方法
     ///
     /// # 参数
     /// * `root_dir` - 根目录路径
     /// * `context` - 归档上下文
     /// * `database` - 数据库实例
+    /// * `progress_callback` - 进度回调函数（可选）
     ///
     /// # 返回值
     /// 返回操作结果
-    fn archive_file_in_db<D>(
+    fn archive_file_in_db<D, F>(
         &self,
         root_dir: &str,
         context: &mut ArchiveContext,
         database: &D,
+        progress_callback: Option<F>,
     ) -> AnyResult<()>
     where
         D: ViewOperations
             + FileOperations
             + DirectoryOperations
-            + MapFileAssetOperations
-            + ArchiveAssetOperations
+            + MapFileChunkOperations
+            + ArchiveChunkOperations
             + ArchiveMetadataOperations
             + RootOperations
-            + StatusOperations;
+            + StatusOperations,
+        F: Fn(ArchiveProgress);
 }

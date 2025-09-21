@@ -26,4 +26,24 @@ impl Database {
 
         Ok(Database { conn })
     }
+
+    /// 规范化目录路径
+    /// 确保路径不以 '/' 结尾，空路径返回 None
+    pub fn normalize_directory_path(path: &Option<String>) -> Option<String> {
+        if let Some(path_str) = path {
+            // 统一使用正斜杠作为路径分隔符
+            let normalized_path = path_str.replace('\\', "/");
+       
+            // 移除路径末尾的 '/' 字符（如果存在）
+            let trimmed_path = normalized_path.trim_end_matches('/');
+            // 如果路径全是 '/' 字符，规范化为空字符串（表示根目录级别）
+            if trimmed_path.is_empty() {
+                Some(String::new()) // 根目录应该返回空字符串而不是 None
+            } else {
+                Some(trimmed_path.to_string())
+            }
+        } else {
+            None
+        }
+    }
 }

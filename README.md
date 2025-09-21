@@ -30,10 +30,10 @@ pnpm run tauri dev
 
 
 ```plantuml
-@startuml 存档流程活动图
+@startuml 归档流程活动图
 start
 
-:初始化存档上下文(ArchiveContext);
+:初始化归档上下文(ArchiveContext);
 :扫描目录获取文件列表(DirectoryScanner);
 
 fork
@@ -42,19 +42,19 @@ fork again
   :计算文件哈希(DigestUtils.sha256Hex);
 end fork
 
-if (文件大小 > 存档限制) then (是)
+if (文件大小 > 归档限制) then (是)
   :文件分卷处理;
-  :生成分卷资产ID;
+  :生成分卷数据块ID;
 else (否)
-  :生成单个资产ID;
+  :生成单个数据块ID;
 endif
 
-if (存在相同哈希资产?) then (是)
-  :关联已有资产ID到文件索引;
+if (存在相同哈希数据块?) then (是)
+  :关联已有数据块ID到文件索引;
 else (否)
-  :创建新资产记录(archive_asset表);
-  :写入文件数据到Tar存档(TarArchiveOutputStream);
-  :更新存档大小和状态;
+  :创建新数据块记录(archive_chunk表);
+  :写入文件数据到Tar归档(TarArchiveOutputStream);
+  :更新归档大小和状态;
 endif
 
 :更新文件索引状态(file_index表);
@@ -161,7 +161,7 @@ stop
 
 - [ ] 支持软链接/硬链接处理
 - [ ] 支持断点续传功能
-- [ ] 完善存档或解档中断异常处理机制
+- [ ] 完善归档或解档中断异常处理机制
 
 ### v0.1.1 release
 

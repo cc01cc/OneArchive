@@ -1,16 +1,16 @@
 //! 数据库仓库实现
 //! 实现数据库操作的具体逻辑
 
-use crate::mod_database::constants::{ArchiveStatus, AssetStatus, MapFileAssetStatus};
+use crate::mod_database::constants::{ArchiveStatus, ChunkStatus, MapFileChunkStatus};
 use crate::mod_database::impl_initialize;
-use crate::mod_database::schema::{ArchiveAsset, ArchiveMetadata, MapFileAsset, ViewAsset};
+use crate::mod_database::schema::{ArchiveChunk, ArchiveMetadata, MapFileChunk, ViewChunk};
 
 use super::constants::{DatabaseTableName, DirectoryStatus, FileStatus};
 use super::database::Database;
 use super::schema::{InfoDirectory, InfoFile, InfoRoot, ViewFile};
 use super::trait_database::{
-    ArchiveAssetOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations,
-    InitializationOperations, MapFileAssetOperations, RootOperations, StatusOperations,
+    ArchiveChunkOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations,
+    InitializationOperations, MapFileChunkOperations, RootOperations, StatusOperations,
     ViewOperations,
 };
 use log::warn;
@@ -115,22 +115,28 @@ impl DirectoryOperations for Database {
     /// 插入目录信息
     ///
     /// # 参数
-    /// * [directory](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L34-L34) - 目录信息
     ///
     /// # 返回值
     /// 返回插入记录的 ID
     fn insert_directory(&self, directory: &InfoDirectory) -> SqliteResult<i64> {
+        // 规范化目录路径，确保不以 '/' 结尾
+        let normalized_directory = InfoDirectory {
+            directory_path: Self::normalize_directory_path(&directory.directory_path)
+                .map(|path| path.replace('\\', "/")),
+            ..directory.clone()
+        };
+
         self.conn.execute(
-            "INSERT INTO info_directory (root_id, directory_name, directory_mtime, directory_path, status) 
-             VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![
-                directory.root_id,
-                directory.directory_name,
-                directory.directory_mtime,
-                directory.directory_path,
-                directory.status.as_str()
-            ],
-        )?;
+        "INSERT INTO info_directory (root_id, directory_name, directory_mtime, directory_path, status) 
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![
+            normalized_directory.root_id,
+            normalized_directory.directory_name,
+            normalized_directory.directory_mtime,
+            normalized_directory.directory_path,
+            normalized_directory.status.as_str()
+        ],
+    )?;
 
         Ok(self.conn.last_insert_rowid())
     }
@@ -138,21 +144,27 @@ impl DirectoryOperations for Database {
     /// 更新目录信息
     ///
     /// # 参数
-    /// * [directory](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L34-L34) - 目录信息
     ///
     /// # 返回值
     /// 返回操作结果
     fn update_directory(&self, directory: &InfoDirectory) -> SqliteResult<()> {
+        // 规范化目录路径，确保不以 '/' 结尾，并统一使用正斜杠作为路径分隔符
+        let normalized_directory = InfoDirectory {
+            directory_path: Self::normalize_directory_path(&directory.directory_path)
+                .map(|path| path.replace('\\', "/")),
+            ..directory.clone()
+        };
+
         self.conn.execute(
-            "UPDATE info_directory SET directory_name = ?1, directory_mtime = ?2, status = ?3, updated_at = strftime('%s', 'now') 
-             WHERE id = ?4",
-            params![
-                directory.directory_name,
-                directory.directory_mtime,
-                directory.status.as_str(),
-                directory.id
-            ],
-        )?;
+        "UPDATE info_directory SET directory_name = ?1, directory_mtime = ?2, status = ?3, updated_at = strftime('%s', 'now') 
+         WHERE id = ?4",
+        params![
+            normalized_directory.directory_name,
+            normalized_directory.directory_mtime,
+            normalized_directory.status.as_str(),
+            normalized_directory.id
+        ],
+    )?;
         Ok(())
     }
 
@@ -169,12 +181,15 @@ impl DirectoryOperations for Database {
         root_id: i64,
         path: &str,
     ) -> SqliteResult<Option<InfoDirectory>> {
+        // 规范化查询路径，确保使用统一的正斜杠分隔符
+        let normalized_path = Self::normalize_directory_path(&Some(path.to_string()));
+
         let mut stmt = self
             .conn
             .prepare("SELECT id, root_id, directory_name, directory_mtime, directory_path, status, created_at, updated_at 
               FROM info_directory WHERE root_id = ?1 AND directory_path = ?2")?;
 
-        let mut rows = stmt.query(params![root_id, path])?;
+        let mut rows = stmt.query(params![root_id, normalized_path])?;
 
         if let Some(row) = rows.next()? {
             Ok(Some(row.try_into()?))
@@ -217,8 +232,108 @@ impl DirectoryOperations for Database {
         }
         Ok(directories)
     }
-}
+    /// 根据 ID 查找目录
+    ///
+    /// # 参数
+    ///
+    /// # 返回值
+    /// 返回目录信息
+    fn find_directory_by_id(&self, id: i64) -> SqliteResult<Option<InfoDirectory>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, root_id, directory_name, directory_mtime, directory_path, status, created_at, updated_at 
+              FROM info_directory WHERE id = ?1")?;
 
+        let mut rows = stmt.query(params![id])?;
+
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.try_into()?))
+        } else {
+            Ok(None)
+        }
+    }
+    /// 查找某个目录的直接父目录
+    ///
+    /// # 参数
+    /// * `root_id` - 根目录 ID
+    /// * `directory_path` - 目录路径
+    ///
+    /// # 返回值
+    /// 返回父目录信息
+    fn find_parent_directory(
+        &self,
+        root_id: i64,
+        directory_path: &str,
+    ) -> SqliteResult<Option<InfoDirectory>> {
+        // 如果目录路径为空或根目录，则没有父目录
+        if directory_path.is_empty() {
+            return Ok(None);
+        }
+
+        // 规范化目录路径
+        let normalized_path =
+            Self::normalize_directory_path(&Some(directory_path.to_string())).unwrap_or_default();
+
+        // 查找父目录路径
+        let parent_path = if let Some(last_slash_pos) = normalized_path.rfind('/') {
+            &normalized_path[..last_slash_pos]
+        } else {
+            "" // 父目录是根目录
+        };
+
+        self.find_directory_by_path(root_id, parent_path)
+    }
+
+    /// 查找某个目录下的所有直接子目录
+    ///
+    /// # 参数
+    /// * `root_id` - 根目录 ID
+    /// * `parent_path` - 父目录路径
+    ///
+    /// # 返回值
+    /// 返回直接子目录列表
+    fn find_child_directories(
+        &self,
+        root_id: i64,
+        parent_path: &str,
+    ) -> SqliteResult<Vec<InfoDirectory>> {
+        // 规范化父目录路径
+        let normalized_parent_path =
+            Self::normalize_directory_path(&Some(parent_path.to_string())).unwrap_or_default();
+
+        let sql = if normalized_parent_path.is_empty() {
+            // 查找根目录下的直接子目录（路径中不包含 '/' 的目录）
+            "SELECT id, root_id, directory_name, directory_mtime, directory_path, status, created_at, updated_at
+             FROM info_directory
+             WHERE root_id = ?1 AND directory_path NOT NULL AND directory_path != '' 
+             AND directory_path NOT LIKE '%/%'"
+        } else {
+            // 查找指定目录下的直接子目录（路径以 parent_path 开头，且后面只有一级目录）
+            "SELECT id, root_id, directory_name, directory_mtime, directory_path, status, created_at, updated_at
+             FROM info_directory
+             WHERE root_id = ?1 AND directory_path LIKE ?2 || '/%' 
+             AND directory_path NOT LIKE ?3 || '/%/%'"
+        };
+
+        let mut stmt = self.conn.prepare(sql)?;
+        let mut rows = if normalized_parent_path.is_empty() {
+            stmt.query(params![root_id])?
+        } else {
+            stmt.query(params![
+                root_id,
+                normalized_parent_path,
+                normalized_parent_path
+            ])?
+        };
+
+        let mut directories = Vec::new();
+        while let Some(row) = rows.next()? {
+            let directory = row.try_into()?;
+            directories.push(directory);
+        }
+        Ok(directories)
+    }
+}
 // 实现文件操作 trait
 impl FileOperations for Database {
     /// 将指定根目录下的所有文件标记为待删除状态
@@ -334,24 +449,24 @@ impl FileOperations for Database {
     }
 }
 
-// 实现存档元数据操作 trait
+// 实现归档元数据操作 trait
 impl ArchiveMetadataOperations for Database {
-    /// 插入存档元数据
+    /// 插入归档元数据
     ///
     /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 存档元数据
+    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
     ///
     /// # 返回值
     /// 返回插入记录的 ID
-    fn insert_archive_metadata(
-        &self,
-        archive: &ArchiveMetadata,
-    ) -> SqliteResult<i64> {
+    fn insert_archive_metadata(&self, archive: &ArchiveMetadata) -> SqliteResult<i64> {
+        let normalized_path =
+            Self::normalize_directory_path(&Some(archive.archive_uri.to_string()));
+
         self.conn.execute(
             "INSERT INTO archive_metadata (archive_uri, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,?9)",
             params![
-                archive.archive_uri,
+                normalized_path,
                 archive.archive_name,
                 archive.archive_limit_size,
                 archive.archive_hash,
@@ -366,17 +481,14 @@ impl ArchiveMetadataOperations for Database {
         Ok(self.conn.last_insert_rowid())
     }
 
-    /// 更新存档元数据
+    /// 更新归档元数据
     ///
     /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 存档元数据
+    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
     ///
     /// # 返回值
     /// 返回操作结果
-    fn update_archive_metadata(
-        &self,
-        archive: &ArchiveMetadata,
-    ) -> SqliteResult<()> {
+    fn update_archive_metadata(&self, archive: &ArchiveMetadata) -> SqliteResult<()> {
         self.conn.execute(
             "UPDATE archive_metadata SET archive_name = ?1, archive_limit_size = ?2, archive_hash = ?3, is_compressed = ?4, compressed_algorithm = ?5, is_encrypted = ?6, encryption_algorithm = ?7, status = ?8, updated_at = strftime('%s', 'now')
              WHERE id = ?9",
@@ -395,17 +507,14 @@ impl ArchiveMetadataOperations for Database {
         Ok(())
     }
 
-    /// 根据 ID 查找存档元数据
+    /// 根据 ID 查找归档元数据
     ///
     /// # 参数
-    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileAsset.java#L24-L24) - 存档 ID
+    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileChunk.java#L24-L24) - 归档 ID
     ///
     /// # 返回值
-    /// 返回存档元数据
-    fn find_archive_metadata_by_id(
-        &self,
-        id: i64,
-    ) -> SqliteResult<Option<ArchiveMetadata>> {
+    /// 返回归档元数据
+    fn find_archive_metadata_by_id(&self, id: i64) -> SqliteResult<Option<ArchiveMetadata>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
              FROM archive_metadata WHERE id = ?1"
@@ -420,17 +529,14 @@ impl ArchiveMetadataOperations for Database {
         }
     }
 
-    /// 根据名称查找存档元数据
+    /// 根据名称查找归档元数据
     ///
     /// # 参数
-    /// * [name](\one-archive-api\src\main\java\com\cc01cc\onearchive\api\service\ArchiveService.java#L29-L30) - 存档名称
+    /// * [name](\one-archive-api\src\main\java\com\cc01cc\onearchive\api\service\ArchiveService.java#L29-L30) - 归档名称
     ///
     /// # 返回值
-    /// 返回存档元数据
-    fn find_archive_metadata_by_name(
-        &self,
-        name: &str,
-    ) -> SqliteResult<Option<ArchiveMetadata>> {
+    /// 返回归档元数据
+    fn find_archive_metadata_by_name(&self, name: &str) -> SqliteResult<Option<ArchiveMetadata>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
              FROM archive_metadata WHERE archive_name = ?1"
@@ -445,12 +551,12 @@ impl ArchiveMetadataOperations for Database {
         }
     }
 
-    /// 根据状态查找存档元数据
+    /// 根据状态查找归档元数据
     ///
     /// # 参数
     ///
     /// # 返回值
-    /// 返回存档元数据列表
+    /// 返回归档元数据列表
     fn find_archive_metadata_by_status(
         &self,
         status: Option<ArchiveStatus>,
@@ -479,75 +585,71 @@ impl ArchiveMetadataOperations for Database {
     }
 }
 
-// 实现存档资源操作 trait
-impl ArchiveAssetOperations for Database {
-    /// 插入存档资源
+// 实现归档数据块操作 trait
+impl ArchiveChunkOperations for Database {
+    /// 插入归档数据块
     ///
     /// # 参数
-    /// * `asset` - 存档资源
+    /// * `chunk` - 归档数据块
     ///
     /// # 返回值
     /// 返回插入记录的 ID
-    fn insert_archive_asset(
-        &self,
-        asset: &ArchiveAsset,
-    ) -> SqliteResult<i64> {
+    fn insert_archive_chunk(&self, chunk: &ArchiveChunk) -> SqliteResult<i64> {
+        let normalized_path =
+            Database::normalize_directory_path(&Some(chunk.chunk_relative_path.to_string()));
         self.conn.execute(
-            "INSERT INTO archive_asset (archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status)
+            "INSERT INTO archive_chunk (archive_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, status)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
-                asset.archive_id,
-                asset.asset_name,
-                asset.asset_size,
-                asset.asset_hash,
-                asset.asset_mtime,
-                asset.asset_relative_path,
-                asset.status.as_str()
+                chunk.archive_id,
+                chunk.chunk_name,
+                chunk.chunk_size,
+                chunk.chunk_hash,
+                chunk.chunk_mtime,
+                normalized_path,
+                chunk.status.as_str()
             ],
         )?;
 
         Ok(self.conn.last_insert_rowid())
     }
 
-    /// 更新存档资源
+    /// 更新归档数据块
     ///
     /// # 参数
-    /// * `asset` - 存档资源
+    /// * `chunk` - 归档数据块
     ///
     /// # 返回值
     /// 返回操作结果
-    fn update_archive_asset(&self, asset: &ArchiveAsset) -> SqliteResult<()> {
+    fn update_archive_chunk(&self, chunk: &ArchiveChunk) -> SqliteResult<()> {
         self.conn.execute(
-            "UPDATE archive_asset SET archive_id = ?1, asset_name = ?2, asset_size = ?3, asset_hash = ?4, asset_mtime = ?5, asset_relative_path = ?6, status = ?7, updated_at = strftime('%s', 'now')
+            "UPDATE archive_chunk SET archive_id = ?1, chunk_name = ?2, chunk_size = ?3, chunk_hash = ?4, chunk_mtime = ?5, chunk_relative_path = ?6, status = ?7, updated_at = strftime('%s', 'now')
              WHERE id = ?8",
             params![
-                asset.archive_id,
-                asset.asset_name,
-                asset.asset_size,
-                asset.asset_hash,
-                asset.asset_mtime,
-                asset.asset_relative_path,
-                asset.status.as_str(),
-                asset.id
+                chunk.archive_id,
+                chunk.chunk_name,
+                chunk.chunk_size,
+                chunk.chunk_hash,
+                chunk.chunk_mtime,
+                chunk.chunk_relative_path,
+                chunk.status.as_str(),
+                chunk.id
             ],
         )?;
         Ok(())
     }
 
-    /// 根据 ID 查找存档资源
+    /// 根据 ID 查找归档数据块
     ///
     /// # 参数
-    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileAsset.java#L24-L24) - 资源 ID
+    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileChunk.java#L24-L24) - 数据块 ID
     ///
     /// # 返回值
-    /// 返回存档资源
-    fn find_archive_asset_by_id(
-        &self,
-        id: i64,
-    ) -> SqliteResult<Option<ArchiveAsset>> {
+    /// 返回归档数据块
+    fn find_archive_chunk_by_id(&self, id: i64) -> SqliteResult<Option<ArchiveChunk>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
-             FROM archive_asset WHERE id = ?1"
+            "SELECT id, archive_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, status, created_at, updated_at 
+             FROM archive_chunk WHERE id = ?1"
         )?;
 
         let mut rows = stmt.query(params![id])?;
@@ -559,48 +661,48 @@ impl ArchiveAssetOperations for Database {
         }
     }
 
-    /// 根据存档 ID 查找存档资源列表
+    /// 根据归档 ID 查找归档数据块列表
     ///
     /// # 参数
-    /// * `archive_id` - 存档 ID
+    /// * `archive_id` - 归档 ID
     ///
     /// # 返回值
-    /// 返回存档资源列表
-    fn find_archive_assets_by_archive_id(
+    /// 返回归档数据块列表
+    fn find_archive_chunks_by_archive_id(
         &self,
         archive_id: i64,
-    ) -> SqliteResult<Vec<ArchiveAsset>> {
+    ) -> SqliteResult<Vec<ArchiveChunk>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
-             FROM archive_asset WHERE archive_id = ?1"
+            "SELECT id, archive_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, status, created_at, updated_at 
+             FROM archive_chunk WHERE archive_id = ?1"
         )?;
 
         let mut rows = stmt.query(params![archive_id])?;
 
-        let mut assets = Vec::new();
+        let mut chunks = Vec::new();
         while let Some(row) = rows.next()? {
-            let asset = row.try_into()?;
-            assets.push(asset);
+            let chunk = row.try_into()?;
+            chunks.push(chunk);
         }
-        Ok(assets)
+        Ok(chunks)
     }
 
-    /// 根据状态查找存档资源
+    /// 根据状态查找归档数据块
     ///
     /// # 参数
     ///
     /// # 返回值
-    /// 返回存档资源列表
-    fn find_archive_assets_by_status(
+    /// 返回归档数据块列表
+    fn find_archive_chunks_by_status(
         &self,
-        status: Option<AssetStatus>,
-    ) -> SqliteResult<Vec<ArchiveAsset>> {
+        status: Option<ChunkStatus>,
+    ) -> SqliteResult<Vec<ArchiveChunk>> {
         let sql = if status.is_some() {
-            "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
-             FROM archive_asset WHERE status = ?1"
+            "SELECT id, archive_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, status, created_at, updated_at 
+             FROM archive_chunk WHERE status = ?1"
         } else {
-            "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
-             FROM archive_asset"
+            "SELECT id, archive_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, status, created_at, updated_at 
+             FROM archive_chunk"
         };
 
         let mut stmt = self.conn.prepare(sql)?;
@@ -610,30 +712,30 @@ impl ArchiveAssetOperations for Database {
             stmt.query([])?
         };
 
-        let mut assets = Vec::new();
+        let mut chunks = Vec::new();
         while let Some(row) = rows.next()? {
-            let asset = row.try_into()?;
-            assets.push(asset);
+            let chunk = row.try_into()?;
+            chunks.push(chunk);
         }
-        Ok(assets)
+        Ok(chunks)
     }
 
-    fn find_archive_asset_by_asset_hash(
+    fn find_archive_chunk_by_chunk_hash(
         &self,
-        asset_hash: &str,
-    ) -> SqliteResult<Option<crate::mod_database::schema::ArchiveAsset>> {
+        chunk_hash: &str,
+    ) -> SqliteResult<Option<crate::mod_database::schema::ArchiveChunk>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, archive_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, status, created_at, updated_at 
-             FROM archive_asset WHERE asset_hash = ?1"
+            "SELECT id, archive_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, status, created_at, updated_at 
+             FROM archive_chunk WHERE chunk_hash = ?1"
         )?;
-        let mut rows = stmt.query(params![asset_hash])?;
+        let mut rows = stmt.query(params![chunk_hash])?;
         // 先获取第一行（如果存在）
         if let Some(row) = rows.next()? {
             let first_row = row.try_into()?;
 
             // 检查是否还有更多行（表示有重复）
             if rows.next()?.is_some() {
-                warn!("Duplicate asset hash found!");
+                warn!("Duplicate chunk hash found!");
             }
             Ok(Some(first_row))
         } else {
@@ -642,22 +744,22 @@ impl ArchiveAssetOperations for Database {
     }
 }
 
-// 实现文件与存档资源映射操作 trait
-impl MapFileAssetOperations for Database {
-    /// 插入文件与存档资源映射
+// 实现文件与归档数据块映射操作 trait
+impl MapFileChunkOperations for Database {
+    /// 插入文件与归档数据块映射
     ///
     /// # 参数
     /// * [map](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\mapper\InfoRootRowMapper.java#L26-L36) - 映射信息
     ///
     /// # 返回值
     /// 返回插入记录的 ID
-    fn insert_map_file_asset(&self, map: &MapFileAsset) -> SqliteResult<i64> {
+    fn insert_map_file_chunk(&self, map: &MapFileChunk) -> SqliteResult<i64> {
         self.conn.execute(
-            "INSERT INTO map_file_asset (file_id, asset_id, volume_order, status)
+            "INSERT INTO map_file_chunk (file_id, chunk_id, volume_order, status)
              VALUES (?1, ?2, ?3, ?4)",
             params![
                 map.file_id,
-                map.asset_id,
+                map.chunk_id,
                 map.volume_order,
                 map.status.as_str()
             ],
@@ -666,20 +768,20 @@ impl MapFileAssetOperations for Database {
         Ok(self.conn.last_insert_rowid())
     }
 
-    /// 更新文件与存档资源映射
+    /// 更新文件与归档数据块映射
     ///
     /// # 参数
     /// * [map](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\mapper\InfoRootRowMapper.java#L26-L36) - 映射信息
     ///
     /// # 返回值
     /// 返回操作结果
-    fn update_map_file_asset(&self, map: &MapFileAsset) -> SqliteResult<()> {
+    fn update_map_file_chunk(&self, map: &MapFileChunk) -> SqliteResult<()> {
         self.conn.execute(
-            "UPDATE map_file_asset SET file_id = ?1, asset_id = ?2, volume_order = ?3, status = ?4, updated_at = strftime('%s', 'now')
+            "UPDATE map_file_chunk SET file_id = ?1, chunk_id = ?2, volume_order = ?3, status = ?4, updated_at = strftime('%s', 'now')
              WHERE id = ?5",
             params![
                 map.file_id,
-                map.asset_id,
+                map.chunk_id,
                 map.volume_order,
                 map.status.as_str(),
                 map.id
@@ -688,20 +790,17 @@ impl MapFileAssetOperations for Database {
         Ok(())
     }
 
-    /// 根据 ID 查找文件与存档资源映射
+    /// 根据 ID 查找文件与归档数据块映射
     ///
     /// # 参数
-    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileAsset.java#L24-L24) - 映射 ID
+    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileChunk.java#L24-L24) - 映射 ID
     ///
     /// # 返回值
     /// 返回映射信息
-    fn find_map_file_asset_by_id(
-        &self,
-        id: i64,
-    ) -> SqliteResult<Option<MapFileAsset>> {
+    fn find_map_file_chunk_by_id(&self, id: i64) -> SqliteResult<Option<MapFileChunk>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
-             FROM map_file_asset WHERE id = ?1",
+            "SELECT id, file_id, chunk_id, volume_order, status, created_at, updated_at 
+             FROM map_file_chunk WHERE id = ?1",
         )?;
 
         let mut rows = stmt.query(params![id])?;
@@ -713,20 +812,17 @@ impl MapFileAssetOperations for Database {
         }
     }
 
-    /// 根据文件 ID 查找文件与存档资源映射
+    /// 根据文件 ID 查找文件与归档数据块映射
     ///
     /// # 参数
     /// * `file_id` - 文件 ID
     ///
     /// # 返回值
     /// 返回映射信息列表
-    fn find_map_file_asset_by_file_id(
-        &self,
-        file_id: i64,
-    ) -> SqliteResult<Vec<MapFileAsset>> {
+    fn find_map_file_chunk_by_file_id(&self, file_id: i64) -> SqliteResult<Vec<MapFileChunk>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
-             FROM map_file_asset WHERE file_id = ?1",
+            "SELECT id, file_id, chunk_id, volume_order, status, created_at, updated_at 
+             FROM map_file_chunk WHERE file_id = ?1",
         )?;
 
         let mut rows = stmt.query(params![file_id])?;
@@ -738,20 +834,20 @@ impl MapFileAssetOperations for Database {
         }
         Ok(maps)
     }
-    /// 根据文件 ID 查找文件与存档资源映射，并按 volume_order 升序排序
+    /// 根据文件 ID 查找文件与归档数据块映射，并按 volume_order 升序排序
     ///
     /// # 参数
     /// * `file_id` - 文件 ID
     ///
     /// # 返回值
     /// 返回按 volume_order 升序排序的映射信息列表
-    fn find_map_file_asset_by_file_id_ordered(
+    fn find_map_file_chunk_by_file_id_ordered(
         &self,
         file_id: i64,
-    ) -> SqliteResult<Vec<MapFileAsset>> {
+    ) -> SqliteResult<Vec<MapFileChunk>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
-             FROM map_file_asset WHERE file_id = ?1 ORDER BY volume_order ASC",
+            "SELECT id, file_id, chunk_id, volume_order, status, created_at, updated_at 
+             FROM map_file_chunk WHERE file_id = ?1 ORDER BY volume_order ASC",
         )?;
 
         let mut rows = stmt.query(params![file_id])?;
@@ -764,23 +860,20 @@ impl MapFileAssetOperations for Database {
         Ok(maps)
     }
 
-    /// 根据资源 ID 查找文件与存档资源映射
+    /// 根据数据块 ID 查找文件与归档数据块映射
     ///
     /// # 参数
-    /// * `asset_id` - 资源 ID
+    /// * `chunk_id` - 数据块 ID
     ///
     /// # 返回值
     /// 返回映射信息列表
-    fn find_map_file_asset_by_asset_id(
-        &self,
-        asset_id: i64,
-    ) -> SqliteResult<Vec<MapFileAsset>> {
+    fn find_map_file_chunk_by_chunk_id(&self, chunk_id: i64) -> SqliteResult<Vec<MapFileChunk>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
-             FROM map_file_asset WHERE asset_id = ?1",
+            "SELECT id, file_id, chunk_id, volume_order, status, created_at, updated_at 
+             FROM map_file_chunk WHERE chunk_id = ?1",
         )?;
 
-        let mut rows = stmt.query(params![asset_id])?;
+        let mut rows = stmt.query(params![chunk_id])?;
 
         let mut maps = Vec::new();
         while let Some(row) = rows.next()? {
@@ -790,22 +883,22 @@ impl MapFileAssetOperations for Database {
         Ok(maps)
     }
 
-    /// 根据状态查找文件与存档资源映射
+    /// 根据状态查找文件与归档数据块映射
     ///
     /// # 参数
     ///
     /// # 返回值
     /// 返回映射信息列表
-    fn find_map_file_asset_by_status(
+    fn find_map_file_chunk_by_status(
         &self,
-        status: Option<MapFileAssetStatus>,
-    ) -> SqliteResult<Vec<MapFileAsset>> {
+        status: Option<MapFileChunkStatus>,
+    ) -> SqliteResult<Vec<MapFileChunk>> {
         let sql = if status.is_some() {
-            "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
-             FROM map_file_asset WHERE status = ?1"
+            "SELECT id, file_id, chunk_id, volume_order, status, created_at, updated_at 
+             FROM map_file_chunk WHERE status = ?1"
         } else {
-            "SELECT id, file_id, asset_id, volume_order, status, created_at, updated_at 
-             FROM map_file_asset"
+            "SELECT id, file_id, chunk_id, volume_order, status, created_at, updated_at 
+             FROM map_file_chunk"
         };
 
         let mut stmt = self.conn.prepare(sql)?;
@@ -936,42 +1029,36 @@ impl ViewOperations for Database {
         Ok(view_files)
     }
 
-    /// 根据存档 ID 查找视图资源
-    fn find_view_assets_by_archive_id(
-        &self,
-        archive_id: i64,
-    ) -> SqliteResult<Vec<ViewAsset>> {
-        let sql = "SELECT archive_id, archive_name, archive_status, asset_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, asset_status, file_id, volume_order
-                 FROM view_asset 
+    /// 根据归档 ID 查找视图数据块
+    fn find_view_chunks_by_archive_id(&self, archive_id: i64) -> SqliteResult<Vec<ViewChunk>> {
+        let sql = "SELECT archive_id, archive_name, archive_status, chunk_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, chunk_status, file_id, volume_order
+                 FROM view_chunk 
                  WHERE archive_id = ?1";
 
         let mut stmt = self.conn.prepare(sql)?;
         let mut rows = stmt.query(params![archive_id])?;
 
-        let mut view_assets = Vec::new();
+        let mut view_chunks = Vec::new();
         while let Some(row) = rows.next()? {
-            let view_asset: ViewAsset = row.try_into()?;
-            view_assets.push(view_asset);
+            let view_chunk: ViewChunk = row.try_into()?;
+            view_chunks.push(view_chunk);
         }
-        Ok(view_assets)
+        Ok(view_chunks)
     }
 
-    fn find_view_assets_by_file_id(
-        &self,
-        file_id: i64,
-    ) -> SqliteResult<Vec<ViewAsset>> {
-        let sql = "SELECT archive_id, archive_uri, archive_name, archive_status, asset_id, asset_name, asset_size, asset_hash, asset_mtime, asset_relative_path, asset_status, file_id, volume_order
-                 FROM view_asset 
+    fn find_view_chunks_by_file_id(&self, file_id: i64) -> SqliteResult<Vec<ViewChunk>> {
+        let sql = "SELECT archive_id, archive_uri, archive_name, archive_status, chunk_id, chunk_name, chunk_size, chunk_hash, chunk_mtime, chunk_relative_path, chunk_status, file_id, volume_order
+                 FROM view_chunk 
                  WHERE file_id = ?1";
 
         let mut stmt = self.conn.prepare(sql)?;
         let mut rows = stmt.query(params![file_id])?;
-        let mut view_assets = Vec::new();
+        let mut view_chunks = Vec::new();
         while let Some(row) = rows.next()? {
-            let view_asset: ViewAsset = row.try_into()?;
-            view_assets.push(view_asset);
+            let view_chunk: ViewChunk = row.try_into()?;
+            view_chunks.push(view_chunk);
         }
-        Ok(view_assets)
+        Ok(view_chunks)
     }
 }
 
@@ -1053,18 +1140,18 @@ mod tests {
         let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap();
         assert_eq!(count, 0);
 
-        // Test archive_asset table
+        // Test archive_chunk table
         let mut stmt = db
             .conn
-            .prepare("SELECT COUNT(*) FROM archive_asset")
+            .prepare("SELECT COUNT(*) FROM archive_chunk")
             .unwrap();
         let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap();
         assert_eq!(count, 0);
 
-        // Test map_file_asset table
+        // Test map_file_chunk table
         let mut stmt = db
             .conn
-            .prepare("SELECT COUNT(*) FROM map_file_asset")
+            .prepare("SELECT COUNT(*) FROM map_file_chunk")
             .unwrap();
         let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap();
         assert_eq!(count, 0);
@@ -1074,7 +1161,7 @@ mod tests {
         let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap();
         assert_eq!(count, 0);
 
-        let mut stmt = db.conn.prepare("SELECT COUNT(*) FROM view_asset").unwrap();
+        let mut stmt = db.conn.prepare("SELECT COUNT(*) FROM view_chunk").unwrap();
         let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap();
         assert_eq!(count, 0);
     }

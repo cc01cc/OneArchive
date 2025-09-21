@@ -1,4 +1,5 @@
 //! 扫描服务的具体实现
+// TODO 添加事务管理
 
 use anyhow::Result as AnyResult;
 use anyhow::anyhow;
@@ -11,13 +12,13 @@ use walkdir::WalkDir;
 
 use crate::mod_database::constants::{DirectoryStatus, FileStatus, RootStatus};
 
-use crate::mod_scan::model_scan::{DirectoryStatistics, ScanProgress};
-use crate::mod_scan::trait_scan::{DirectoryScanOperations, DirectoryStatisticsOperations};
 use crate::mod_database::schema::{InfoDirectory, InfoFile, InfoRoot};
 use crate::mod_database::trait_database::DirectoryOperations;
 use crate::mod_database::trait_database::FileOperations;
 use crate::mod_database::trait_database::RootOperations;
 use crate::mod_database::trait_database::StatusOperations;
+use crate::mod_scan::model_scan::{DirectoryStatistics, ScanProgress};
+use crate::mod_scan::trait_scan::{DirectoryScanOperations, DirectoryStatisticsOperations};
 
 /// 扫描服务实现结构体
 pub struct ScanServices;
@@ -158,12 +159,12 @@ impl ScanServices {
                 tmp_file.file_hash = file_hash.clone();
                 tmp_file.status = FileStatus::WaitToArchive;
                 database.update_file(&tmp_file)?;
-                info!("文件内容变更，标记为待存档：{}", file_name);
+                info!("文件内容变更，标记为待归档：{}", file_name);
             } else {
                 // 根据设计规范，所有扫描到的文件都应该标记为WaitToArchive状态
                 tmp_file.status = FileStatus::WaitToArchive;
                 database.update_file(&tmp_file)?;
-                info!("文件未变更，标记为待存档：{}", file_name);
+                info!("文件未变更，标记为待归档：{}", file_name);
             }
         } else {
             // 创建新的文件记录，首次创建的文件状态应为 WaitToArchive
@@ -317,11 +318,13 @@ impl DirectoryScanOperations for ScanServices {
                     .strip_prefix(root_path_ref)?
                     .to_string_lossy()
                     .to_string();
+                // 统一使用正斜杠作为路径分隔符
+                let normalized_path = relative_path.replace('\\', "/");
                 self.update_scan_progress(
                     &progress_callback,
                     processed_size,
                     total_size,
-                    format!("正在扫描目录：{}", relative_path),
+                    format!("正在扫描目录：{}", normalized_path),
                 );
             } else if path.is_file() {
                 let (file_size, file_name) =
@@ -337,7 +340,6 @@ impl DirectoryScanOperations for ScanServices {
                 );
             }
         }
-
         // 更新根目录状态为原始状态
         database.update_root_status(root_id, original_root_status.as_str())?;
         info!("目录扫描完成");

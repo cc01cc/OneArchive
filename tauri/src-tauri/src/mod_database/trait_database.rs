@@ -42,7 +42,6 @@ pub trait RootOperations {
 
     /// 查找所有根目录信息
     fn find_all_root_info(&self) -> SqliteResult<Vec<InfoRoot>>;
-
 }
 
 /// 数据库目录操作 trait
@@ -87,12 +86,32 @@ pub trait DirectoryOperations {
         root_id: i64,
         path: &str,
     ) -> SqliteResult<Option<InfoDirectory>>;
-
+    /// 根据 ID 查找目录
+    ///
+    /// # 参数
+    ///
+    /// # 返回值
+    /// 返回目录信息
+    fn find_directory_by_id(&self, id: i64) -> SqliteResult<Option<InfoDirectory>>;
     /// 根据状态和根目录 ID 查找目录
     fn find_directories_by_status_and_root_id(
         &self,
         root_id: i64,
         status: Option<DirectoryStatus>,
+    ) -> SqliteResult<Vec<InfoDirectory>>;
+
+    /// 查找某个目录的直接父目录
+    fn find_parent_directory(
+        &self,
+        root_id: i64,
+        directory_path: &str,
+    ) -> SqliteResult<Option<InfoDirectory>>;
+
+    /// 查找某个目录下的所有直接子目录
+    fn find_child_directories(
+        &self,
+        root_id: i64,
+        parent_path: &str,
     ) -> SqliteResult<Vec<InfoDirectory>>;
 }
 
@@ -136,12 +155,12 @@ pub trait FileOperations {
     fn update_file(&self, file: &InfoFile) -> SqliteResult<()>;
 }
 
-/// 数据库存档元数据操作 trait
+/// 数据库归档元数据操作 trait
 pub trait ArchiveMetadataOperations {
-    /// 插入存档元数据
+    /// 插入归档元数据
     ///
     /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 存档元数据
+    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
     ///
     /// # 返回值
     /// 返回插入记录的 ID
@@ -150,191 +169,188 @@ pub trait ArchiveMetadataOperations {
         archive: &super::schema::ArchiveMetadata,
     ) -> SqliteResult<i64>;
 
-    /// 更新存档元数据
+    /// 更新归档元数据
     ///
     /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 存档元数据
+    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
     ///
     /// # 返回值
     /// 返回操作结果
     fn update_archive_metadata(&self, archive: &super::schema::ArchiveMetadata)
     -> SqliteResult<()>;
 
-    /// 根据 ID 查找存档元数据
+    /// 根据 ID 查找归档元数据
     ///
     /// # 参数
-    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileAsset.java#L24-L24) - 存档 ID
     ///
     /// # 返回值
-    /// 返回存档元数据
+    /// 返回归档元数据
     fn find_archive_metadata_by_id(
         &self,
         id: i64,
     ) -> SqliteResult<Option<super::schema::ArchiveMetadata>>;
 
-    /// 根据名称查找存档元数据
+    /// 根据名称查找归档元数据
     ///
     /// # 参数
     ///
     /// # 返回值
-    /// 返回存档元数据
+    /// 返回归档元数据
     fn find_archive_metadata_by_name(
         &self,
         name: &str,
     ) -> SqliteResult<Option<super::schema::ArchiveMetadata>>;
 
-    /// 根据状态查找存档元数据
+    /// 根据状态查找归档元数据
     ///
     /// # 参数
     ///
     /// # 返回值
-    /// 返回存档元数据列表
+    /// 返回归档元数据列表
     fn find_archive_metadata_by_status(
         &self,
         status: Option<super::constants::ArchiveStatus>,
     ) -> SqliteResult<Vec<super::schema::ArchiveMetadata>>;
 }
 
-/// 数据库存档资源操作 trait
-pub trait ArchiveAssetOperations {
-    /// 插入存档资源
+/// 数据库归档数据块操作 trait
+pub trait ArchiveChunkOperations {
+    /// 插入归档数据块
     ///
     /// # 参数
-    /// * `asset` - 存档资源
+    /// * `chunk` - 归档数据块
     ///
     /// # 返回值
     /// 返回插入记录的 ID
-    fn insert_archive_asset(&self, asset: &super::schema::ArchiveAsset) -> SqliteResult<i64>;
+    fn insert_archive_chunk(&self, chunk: &super::schema::ArchiveChunk) -> SqliteResult<i64>;
 
-    /// 更新存档资源
+    /// 更新归档数据块
     ///
     /// # 参数
-    /// * `asset` - 存档资源
+    /// * `chunk` - 归档数据块
     ///
     /// # 返回值
     /// 返回操作结果
-    fn update_archive_asset(&self, asset: &super::schema::ArchiveAsset) -> SqliteResult<()>;
+    fn update_archive_chunk(&self, chunk: &super::schema::ArchiveChunk) -> SqliteResult<()>;
 
-    /// 根据 ID 查找存档资源
+    /// 根据 ID 查找归档数据块
     ///
     /// # 参数
-    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileAsset.java#L24-L24) - 资源 ID
     ///
     /// # 返回值
-    /// 返回存档资源
-    fn find_archive_asset_by_id(
+    /// 返回归档数据块
+    fn find_archive_chunk_by_id(
         &self,
         id: i64,
-    ) -> SqliteResult<Option<super::schema::ArchiveAsset>>;
+    ) -> SqliteResult<Option<super::schema::ArchiveChunk>>;
 
-    /// 根据存档 ID 查找存档资源列表
+    /// 根据归档 ID 查找归档数据块列表
     ///
     /// # 参数
-    /// * `archive_id` - 存档 ID
+    /// * `archive_id` - 归档 ID
     ///
     /// # 返回值
-    /// 返回存档资源列表
-    fn find_archive_assets_by_archive_id(
+    /// 返回归档数据块列表
+    fn find_archive_chunks_by_archive_id(
         &self,
         archive_id: i64,
-    ) -> SqliteResult<Vec<super::schema::ArchiveAsset>>;
+    ) -> SqliteResult<Vec<super::schema::ArchiveChunk>>;
 
-    /// 根据状态查找存档资源
+    /// 根据状态查找归档数据块
     ///
     /// # 参数
     ///
     /// # 返回值
-    /// 返回存档资源列表
-    fn find_archive_assets_by_status(
+    /// 返回归档数据块列表
+    fn find_archive_chunks_by_status(
         &self,
-        status: Option<super::constants::AssetStatus>,
-    ) -> SqliteResult<Vec<super::schema::ArchiveAsset>>;
+        status: Option<super::constants::ChunkStatus>,
+    ) -> SqliteResult<Vec<super::schema::ArchiveChunk>>;
 
-    /// 根据 asset hash 查找存档资源
-    fn find_archive_asset_by_asset_hash(
+    /// 根据 chunk hash 查找归档数据块
+    fn find_archive_chunk_by_chunk_hash(
         &self,
-        asset_hash: &str,
-    ) -> SqliteResult<Option<super::schema::ArchiveAsset>>;
+        chunk_hash: &str,
+    ) -> SqliteResult<Option<super::schema::ArchiveChunk>>;
 }
 
-/// 数据库文件与存档资源映射操作 trait
-pub trait MapFileAssetOperations {
-    /// 插入文件与存档资源映射
+/// 数据库文件与归档数据块映射操作 trait
+pub trait MapFileChunkOperations {
+    /// 插入文件与归档数据块映射
     ///
     /// # 参数
     /// * [map](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\mapper\InfoRootRowMapper.java#L26-L36) - 映射信息
     ///
     /// # 返回值
     /// 返回插入记录的 ID
-    fn insert_map_file_asset(&self, map: &super::schema::MapFileAsset) -> SqliteResult<i64>;
+    fn insert_map_file_chunk(&self, map: &super::schema::MapFileChunk) -> SqliteResult<i64>;
 
-    /// 更新文件与存档资源映射
+    /// 更新文件与归档数据块映射
     ///
     /// # 参数
     /// * [map](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\mapper\InfoRootRowMapper.java#L26-L36) - 映射信息
     ///
     /// # 返回值
     /// 返回操作结果
-    fn update_map_file_asset(&self, map: &super::schema::MapFileAsset) -> SqliteResult<()>;
+    fn update_map_file_chunk(&self, map: &super::schema::MapFileChunk) -> SqliteResult<()>;
 
-    /// 根据 ID 查找文件与存档资源映射
+    /// 根据 ID 查找文件与归档数据块映射
     ///
     /// # 参数
-    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileAsset.java#L24-L24) - 映射 ID
     ///
     /// # 返回值
     /// 返回映射信息
-    fn find_map_file_asset_by_id(
+    fn find_map_file_chunk_by_id(
         &self,
         id: i64,
-    ) -> SqliteResult<Option<super::schema::MapFileAsset>>;
+    ) -> SqliteResult<Option<super::schema::MapFileChunk>>;
 
-    /// 根据文件 ID 查找文件与存档资源映射
+    /// 根据文件 ID 查找文件与归档数据块映射
     ///
     /// # 参数
     /// * `file_id` - 文件 ID
     ///
     /// # 返回值
     /// 返回映射信息列表
-    fn find_map_file_asset_by_file_id(
+    fn find_map_file_chunk_by_file_id(
         &self,
         file_id: i64,
-    ) -> SqliteResult<Vec<super::schema::MapFileAsset>>;
+    ) -> SqliteResult<Vec<super::schema::MapFileChunk>>;
 
-    /// 根据文件 ID 查找文件与存档资源映射，并按 volume_order 升序排序
+    /// 根据文件 ID 查找文件与归档数据块映射，并按 volume_order 升序排序
     ///
     /// # 参数
     /// * `file_id` - 文件 ID
     ///
     /// # 返回值
     /// 返回按 volume_order 升序排序的映射信息列表
-    fn find_map_file_asset_by_file_id_ordered(
+    fn find_map_file_chunk_by_file_id_ordered(
         &self,
         file_id: i64,
-    ) -> SqliteResult<Vec<super::schema::MapFileAsset>>;
+    ) -> SqliteResult<Vec<super::schema::MapFileChunk>>;
 
-    /// 根据资源 ID 查找文件与存档资源映射
+    /// 根据数据块 ID 查找文件与归档数据块映射
     ///
     /// # 参数
-    /// * `asset_id` - 资源 ID
+    /// * `chunk_id` - 数据块 ID
     ///
     /// # 返回值
     /// 返回映射信息列表
-    fn find_map_file_asset_by_asset_id(
+    fn find_map_file_chunk_by_chunk_id(
         &self,
-        asset_id: i64,
-    ) -> SqliteResult<Vec<super::schema::MapFileAsset>>;
+        chunk_id: i64,
+    ) -> SqliteResult<Vec<super::schema::MapFileChunk>>;
 
-    /// 根据状态查找文件与存档资源映射
+    /// 根据状态查找文件与归档数据块映射
     ///
     /// # 参数
     ///
     /// # 返回值
     /// 返回映射信息列表
-    fn find_map_file_asset_by_status(
+    fn find_map_file_chunk_by_status(
         &self,
-        status: Option<super::constants::MapFileAssetStatus>,
-    ) -> SqliteResult<Vec<super::schema::MapFileAsset>>;
+        status: Option<super::constants::MapFileChunkStatus>,
+    ) -> SqliteResult<Vec<super::schema::MapFileChunk>>;
 }
 
 /// 数据库视图操作 trait
@@ -359,17 +375,17 @@ pub trait ViewOperations {
         status: Option<FileStatus>,
     ) -> SqliteResult<Vec<ViewFile>>;
 
-    /// 根据存档 ID 查找视图资源
-    fn find_view_assets_by_archive_id(
+    /// 根据归档 ID 查找视图数据块
+    fn find_view_chunks_by_archive_id(
         &self,
         archive_id: i64,
-    ) -> SqliteResult<Vec<super::schema::ViewAsset>>;
+    ) -> SqliteResult<Vec<super::schema::ViewChunk>>;
 
-    /// 根据文件 ID 查找视图资源
-    fn find_view_assets_by_file_id(
+    /// 根据文件 ID 查找视图数据块
+    fn find_view_chunks_by_file_id(
         &self,
         file_id: i64,
-    ) -> SqliteResult<Vec<super::schema::ViewAsset>>;
+    ) -> SqliteResult<Vec<super::schema::ViewChunk>>;
 }
 
 /// 数据库表状态操作 trait

@@ -3,6 +3,7 @@
 
 <template>
   <div id="app">
+    <Toast />
     <router-view />
   </div>
 </template>
