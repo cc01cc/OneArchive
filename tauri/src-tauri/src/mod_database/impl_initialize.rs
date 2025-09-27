@@ -65,7 +65,8 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
         archive_name TEXT NOT NULL,
         archive_uri TEXT NOT NULL UNIQUE,
         archive_limit_size INTEGER NOT NULL,
-        archive_hash TEXT,
+        archive_hash TEXT,            -- 添加的哈希字段
+        archive_size INTEGER,          -- 添加的大小字段
         is_compressed INTEGER NOT NULL DEFAULT 0,
         compressed_algorithm TEXT,
         is_encrypted INTEGER NOT NULL DEFAULT 0,
@@ -98,6 +99,7 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
     info!("已创建 archive_chunk 表");
 
     // 创建文件与归档数据块表 map_file_chunk
+    // IF BIG FILE HAS SAME CONTENT, THE FILE_ID AND CHUNK_ID WILL BE SAME.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS map_file_chunk (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,7 +111,7 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
         updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
         FOREIGN KEY (file_id) REFERENCES info_file(id) ON DELETE CASCADE,
         FOREIGN KEY (chunk_id) REFERENCES archive_chunk(id) ON DELETE CASCADE,
-        UNIQUE(file_id, chunk_id)
+        UNIQUE(file_id, chunk_id, volume_order)
     )",
         [],
     )?;
@@ -138,6 +140,94 @@ pub fn initialize_tables(conn: &Connection) -> SqliteResult<()> {
         [],
     )?;
     info!("已创建 view_file 视图");
+
+    // 创建灾备组表 disaster_recovery_group
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS disaster_recovery_group (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id TEXT NOT NULL UNIQUE,
+        num_data_shards INTEGER NOT NULL,
+        num_parity_shards INTEGER NOT NULL,
+        data_shards_stored INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'HEALTH',
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+    )",
+        [],
+    )?;
+    info!("已创建 disaster_recovery_group 表");
+
+    // 创建数据分片表 disaster_recovery_data_shard
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS disaster_recovery_data_shard (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id INTEGER NOT NULL,
+        shard_index INTEGER NOT NULL,
+        shard_path TEXT,                     -- 数据分片路径可以为空
+        shard_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'HEALTH',
+        last_verified INTEGER,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (group_id) REFERENCES disaster_recovery_group(id) ON DELETE CASCADE,
+        UNIQUE(group_id, shard_index)
+    )",
+        [],
+    )?;
+    info!("已创建 disaster_recovery_data_shard 表");
+
+    // 创建校验分片表 disaster_recovery_parity_shard
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS disaster_recovery_parity_shard (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id INTEGER NOT NULL,
+        shard_index INTEGER NOT NULL,
+        shard_path TEXT NOT NULL,            -- 校验分片路径不能为空
+        shard_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'HEALTH',
+        last_verified INTEGER,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (group_id) REFERENCES disaster_recovery_group(id) ON DELETE CASCADE,
+        UNIQUE(group_id, shard_index)
+    )",
+        [],
+    )?;
+    info!("已创建 disaster_recovery_parity_shard 表");
+
+    // 创建灾备组归档文件映射表 map_recovery_group_archive 多对多
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS map_recovery_group_archive (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id INTEGER NOT NULL,
+        archive_id INTEGER NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        status TEXT NOT NULL DEFAULT 'HEALTH',
+        FOREIGN KEY (group_id) REFERENCES disaster_recovery_group(id) ON DELETE CASCADE,
+        FOREIGN KEY (archive_id) REFERENCES archive_metadata(id) ON DELETE CASCADE,
+        UNIQUE(group_id, archive_id)
+    )",
+        [],
+    )?;
+    info!("已创建 map_recovery_group_archive 表");
+
+    // 创建归档文件与数据分片映射表 map_archive_db_shard
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS map_archive_db_shard (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        shard_id INTEGER NOT NULL,
+        archive_id INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'HEALTH',
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (shard_id) REFERENCES disaster_recovery_data_shard(id) ON DELETE CASCADE,
+        FOREIGN KEY (archive_id) REFERENCES archive_metadata(id) ON DELETE CASCADE,
+        UNIQUE(shard_id, archive_id)
+    )",
+        [],
+    )?;
+    info!("已创建 map_archive_db_shard 表");
 
     // 创建数据块列表视图 view_chunk
     conn.execute(

@@ -181,6 +181,7 @@ pub struct ArchiveMetadata {
     pub archive_uri: String,
     pub archive_limit_size: i64,
     pub archive_hash: Option<String>,
+    pub archive_size: Option<i64>,
     pub is_compressed: i32,
     pub compressed_algorithm: Option<String>,
     pub is_encrypted: i32,
@@ -189,6 +190,27 @@ pub struct ArchiveMetadata {
     pub status: ArchiveStatus,
     pub created_at: Option<i64>,
     pub updated_at: Option<i64>,
+}
+
+impl TryFrom<&Row<'_>> for ArchiveMetadata {
+    type Error = rusqlite::Error;
+    fn try_from(row: &Row) -> SqliteResult<Self> {
+        Ok(ArchiveMetadata {
+            id: row.get("id")?,
+            archive_name: row.get("archive_name")?,
+            archive_uri: row.get("archive_uri")?,
+            archive_limit_size: row.get("archive_limit_size")?,
+            archive_hash: row.get("archive_hash")?,
+            archive_size: row.get("archive_size")?,
+            is_compressed: row.get("is_compressed")?,
+            compressed_algorithm: row.get("compressed_algorithm")?,
+            is_encrypted: row.get("is_encrypted")?,
+            encryption_algorithm: row.get("encryption_algorithm")?,
+            status: ArchiveStatus::from_str(&row.get::<_, String>("status")?),
+            created_at: row.get("created_at")?,
+            updated_at: row.get("updated_at")?,
+        })
+    }
 }
 
 impl ArchiveMetadata {
@@ -207,6 +229,7 @@ impl ArchiveMetadata {
             archive_uri,
             archive_limit_size,
             archive_hash: None,
+            archive_size: None,
             is_compressed,
             compressed_algorithm: None,
             is_encrypted,
@@ -215,26 +238,6 @@ impl ArchiveMetadata {
             created_at: None,
             updated_at: None,
         }
-    }
-}
-
-impl TryFrom<&Row<'_>> for ArchiveMetadata {
-    type Error = rusqlite::Error;
-    fn try_from(row: &Row) -> SqliteResult<Self> {
-        Ok(ArchiveMetadata {
-            id: row.get("id")?,
-            archive_name: row.get("archive_name")?,
-            archive_uri: row.get("archive_uri")?,
-            archive_limit_size: row.get("archive_limit_size")?,
-            archive_hash: row.get("archive_hash")?,
-            is_compressed: row.get("is_compressed")?,
-            compressed_algorithm: row.get("compressed_algorithm")?,
-            is_encrypted: row.get("is_encrypted")?,
-            encryption_algorithm: row.get("encryption_algorithm")?,
-            status: ArchiveStatus::from_str(&row.get::<_, String>("status")?),
-            created_at: row.get("created_at")?,
-            updated_at: row.get("updated_at")?,
-        })
     }
 }
 
@@ -416,4 +419,17 @@ impl TryFrom<&Row<'_>> for ViewChunk {
             volume_order: row.get("volume_order")?,
         })
     }
+}
+
+/// 创建归档元数据的参数
+#[derive(Debug, Clone)]
+pub struct CreateArchiveMetadataParams {
+    pub archive_uri: String,
+    pub archive_name: String,
+    pub archive_limit_size: u64,
+    pub is_compressed: i8,
+    pub is_encrypted: i8,
+    pub compression_algorithm: Option<String>,
+    pub encryption_algorithm: Option<String>,
+    pub status: ArchiveStatus,
 }

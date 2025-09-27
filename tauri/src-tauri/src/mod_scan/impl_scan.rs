@@ -12,11 +12,11 @@ use walkdir::WalkDir;
 
 use crate::mod_database::constants::{DirectoryStatus, FileStatus, RootStatus};
 
+use crate::mod_database::dao::info_directory::InfoDirectoryDao;
+use crate::mod_database::dao::info_file::InfoFileDao;
+use crate::mod_database::dao::info_root::InfoRootDao;
+use crate::mod_database::database::Database;
 use crate::mod_database::schema::{InfoDirectory, InfoFile, InfoRoot};
-use crate::mod_database::trait_database::DirectoryOperations;
-use crate::mod_database::trait_database::FileOperations;
-use crate::mod_database::trait_database::RootOperations;
-use crate::mod_database::trait_database::StatusOperations;
 use crate::mod_scan::model_scan::{DirectoryStatistics, ScanProgress};
 use crate::mod_scan::trait_scan::{DirectoryScanOperations, DirectoryStatisticsOperations};
 
@@ -30,14 +30,11 @@ impl ScanServices {
     }
 
     /// 处理根目录逻辑
-    fn handle_root_directory<D>(&self, database: &D, start_path: &Path) -> AnyResult<(i64, String)>
-    where
-        D: RootOperations + DirectoryOperations + FileOperations,
-    {
-        let root_path_str = start_path
-            .to_str()
-            .ok_or_else(|| anyhow!("Invalid UTF-8 in path"))?
-            .to_string();
+    fn handle_root_directory(
+        &self, database: &Database, start_path: &Path,
+    ) -> AnyResult<(i64, String)> {
+        let root_path_str =
+            start_path.to_str().ok_or_else(|| anyhow!("Invalid UTF-8 in path"))?.to_string();
 
         let root_name = start_path
             .file_name()
@@ -46,23 +43,25 @@ impl ScanServices {
             .ok_or_else(|| anyhow!("根目录名称不是有效的 UTF-8"))?
             .to_string();
 
+        let root_dao = InfoRootDao::new(database.conn.clone());
+
         // 查找或创建根目录
-        let root_id = if let Some(root_info) = database.find_root_info_by_path(&root_path_str)? {
+        let root_id = if let Some(root_info) = root_dao.find_root_info_by_path(&root_path_str)? {
             info!("找到现有根目录记录：{:?}", root_info);
 
+            let directory_dao = InfoDirectoryDao::new(database.conn.clone());
+            let file_dao = InfoFileDao::new(database.conn.clone());
+
             // 将现有目录和文件标记为待删除
-            database.mark_directories_as_wait_to_delete(root_info.id.unwrap())?;
-            database.mark_files_as_wait_to_delete(root_info.id.unwrap())?;
+            directory_dao.mark_directories_as_wait_to_delete(root_info.id.unwrap())?;
+            file_dao.mark_files_as_wait_to_delete(root_info.id.unwrap())?;
 
             root_info.id.unwrap()
         } else {
             // 创建新的根目录记录
-            let root_info = InfoRoot::new(
-                root_path_str.clone(),
-                root_name.clone(),
-                RootStatus::WaitToArchive,
-            );
-            let root_id = database.add_root_directory(
+            let root_info =
+                InfoRoot::new(root_path_str.clone(), root_name.clone(), RootStatus::WaitToArchive);
+            let root_id = root_dao.add_root_directory(
                 &root_info.root_path,
                 &root_info.root_name,
                 root_info.status.as_str(),
@@ -76,31 +75,21 @@ impl ScanServices {
     }
 
     /// 处理目录条目
-    fn process_directory_entry<D>(
-        &self,
-        database: &D,
-        root_id: i64,
-        start_path: &Path,
-        path: &Path,
-    ) -> AnyResult<()>
-    where
-        D: DirectoryOperations,
-    {
+    fn process_directory_entry(
+        &self, database: &Database, root_id: i64, start_path: &Path, path: &Path,
+    ) -> AnyResult<()> {
         let relative_path = path.strip_prefix(start_path)?.to_string_lossy().to_string();
         let metadata = fs::metadata(path)?;
-        let mtime = metadata
-            .modified()?
-            .duration_since(SystemTime::UNIX_EPOCH)?
-            .as_millis() as i64;
+        let mtime = metadata.modified()?.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as i64;
         let dir_name = path.file_name().unwrap().to_string_lossy().to_string();
 
-        let exist_dir = database.find_directory_by_path(root_id, &relative_path)?;
+        let directory_dao = InfoDirectoryDao::new(database.conn.clone());
+        let exist_dir = directory_dao.find_directory_by_path(root_id, &relative_path)?;
         if let Some(mut tmp_dir) = exist_dir {
             // 更新现有目录的 mtime 和状态
             tmp_dir.directory_mtime = mtime;
             tmp_dir.status = DirectoryStatus::WaitToArchive;
-            database.update_directory(&tmp_dir)?;
-            info!("更新现有目录：{}", relative_path);
+            directory_dao.update_directory(&tmp_dir)?;
         } else {
             // 创建新的目录记录，首次创建的目录状态应为 WaitToArchive
             let info_dir = InfoDirectory::new(
@@ -110,7 +99,7 @@ impl ScanServices {
                 Some(relative_path.clone()),
                 DirectoryStatus::WaitToArchive,
             );
-            let _id = database.insert_directory(&info_dir)?;
+            let _id = directory_dao.insert_directory(&info_dir)?;
             info!("插入新目录：{}, ID: {}", relative_path, _id);
         }
 
@@ -118,52 +107,42 @@ impl ScanServices {
     }
 
     /// 处理文件条目
-    fn process_file_entry<D>(
-        &self,
-        database: &D,
-        root_id: i64,
-        start_path: &Path,
-        path: &Path,
-    ) -> AnyResult<(u64, String)>
-    where
-        D: DirectoryOperations + FileOperations,
-    {
+    fn process_file_entry(
+        &self, database: &Database, root_id: i64, start_path: &Path, path: &Path,
+    ) -> AnyResult<(u64, String)> {
         let parent_path = path.parent().unwrap();
-        let relative_path = parent_path
-            .strip_prefix(start_path)?
-            .to_string_lossy()
-            .to_string();
+        let relative_path = parent_path.strip_prefix(start_path)?.to_string_lossy().to_string();
 
         let metadata = fs::metadata(path)?;
         let file_size = metadata.len();
-        let mtime = metadata
-            .modified()?
-            .duration_since(SystemTime::UNIX_EPOCH)?
-            .as_millis() as i64;
+        let mtime = metadata.modified()?.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as i64;
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
 
         // Calculate file hash
         let file_hash = calculate_file_hash(path).ok();
 
+        let directory_dao = InfoDirectoryDao::new(database.conn.clone());
+        let file_dao = InfoFileDao::new(database.conn.clone());
+
         // Find directory ID
-        let directory_id = database
+        let directory_id = directory_dao
             .find_directory_by_path(root_id, &relative_path)?
             .ok_or_else(|| anyhow!("文件所属目录不存在：{:?}", relative_path))?
             .id
             .unwrap();
-        let exist_file = database.find_file_by_name(directory_id, &file_name)?;
+        let exist_file = file_dao.find_file_by_name(directory_id, &file_name)?;
 
         if let Some(mut tmp_file) = exist_file {
             // Update existing file with its original status
             if tmp_file.file_hash != file_hash {
                 tmp_file.file_hash = file_hash.clone();
                 tmp_file.status = FileStatus::WaitToArchive;
-                database.update_file(&tmp_file)?;
+                file_dao.update_file(&tmp_file)?;
                 info!("文件内容变更，标记为待归档：{}", file_name);
             } else {
-                // 根据设计规范，所有扫描到的文件都应该标记为WaitToArchive状态
+                // 根据设计规范，所有扫描到的文件都应该标记为 WaitToArchive 状态
                 tmp_file.status = FileStatus::WaitToArchive;
-                database.update_file(&tmp_file)?;
+                file_dao.update_file(&tmp_file)?;
                 info!("文件未变更，标记为待归档：{}", file_name);
             }
         } else {
@@ -178,7 +157,7 @@ impl ScanServices {
             );
 
             // TODO: Check if file already exists in database and update accordingly
-            let _id = database.insert_file(&info_file)?;
+            let _id = file_dao.insert_file(&info_file)?;
             info!("插入文件：{}, ID: {}", file_name, _id);
         }
 
@@ -187,22 +166,13 @@ impl ScanServices {
 
     /// 更新扫描进度
     fn update_scan_progress<F>(
-        &self,
-        progress_callback: &Option<F>,
-        processed_size: u64,
-        total_size: u64,
-        message: String,
+        &self, progress_callback: &Option<F>, processed_size: u64, total_size: u64, message: String,
     ) where
         F: Fn(ScanProgress),
     {
         if let Some(cb) = progress_callback {
             let progress = processed_size as f64 / total_size as f64 * 100.0;
-            cb(ScanProgress {
-                processed: processed_size,
-                total: total_size,
-                message,
-                progress,
-            });
+            cb(ScanProgress { processed: processed_size, total: total_size, message, progress });
         }
     }
 }
@@ -279,14 +249,10 @@ impl DirectoryScanOperations for ScanServices {
        - 根目录状态从 InScanning 转换为 WaitToArchive
        - 未被更新的记录保持 WaitToDelete 状态，表示已删除
           */
-    fn scan_and_save_directory_with_events<D, F>(
-        &self,
-        start_path: &Path,
-        database: &D,
-        progress_callback: Option<F>,
+    fn scan_and_save_directory_with_events<F>(
+        &self, start_path: &Path, database: &Database, progress_callback: Option<F>,
     ) -> AnyResult<()>
     where
-        D: RootOperations + DirectoryOperations + FileOperations + StatusOperations,
         F: Fn(ScanProgress),
     {
         let root_path = start_path.canonicalize()?;
@@ -302,30 +268,22 @@ impl DirectoryScanOperations for ScanServices {
         let original_root_status = RootStatus::WaitToArchive;
         let root_path_ref = &root_path;
 
+        let root_dao = InfoRootDao::new(database.conn.clone());
+
         // 遍历目录结构
-        for entry in walkdir::WalkDir::new(root_path.clone())
-            .into_iter()
-            .filter_map(|e| e.ok())
-        {
+        for entry in WalkDir::new(root_path.clone()).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
 
             if path.is_dir() {
-                self.process_directory_entry(database, root_id, root_path_ref, path)?;
-
                 // 更新目录扫描进度
                 // TODO 这里需要将状态修改为 InScanning
-                let relative_path = path
-                    .strip_prefix(root_path_ref)?
-                    .to_string_lossy()
-                    .to_string();
-                // 统一使用正斜杠作为路径分隔符
-                let normalized_path = relative_path.replace('\\', "/");
                 self.update_scan_progress(
                     &progress_callback,
                     processed_size,
                     total_size,
-                    format!("正在扫描目录：{}", normalized_path),
+                    format!("正在扫描目录：{}", path.to_string_lossy()),
                 );
+                self.process_directory_entry(database, root_id, root_path_ref, path)?;
             } else if path.is_file() {
                 let (file_size, file_name) =
                     self.process_file_entry(database, root_id, root_path_ref, path)?;
@@ -341,7 +299,7 @@ impl DirectoryScanOperations for ScanServices {
             }
         }
         // 更新根目录状态为原始状态
-        database.update_root_status(root_id, original_root_status.as_str())?;
+        root_dao.update_root_status(root_id, original_root_status.as_str())?;
         info!("目录扫描完成");
         Ok(())
     }

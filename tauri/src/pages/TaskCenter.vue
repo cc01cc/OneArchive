@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 import { ref, computed, markRaw } from 'vue'
 import { useRoute } from 'vue-router'
 import Splitter from 'primevue/splitter'
@@ -7,6 +8,9 @@ import TaskList from './task-center/TaskList.vue'
 import ArchiveTask from './task-center/ArchiveTask.vue'
 import ExtractTask from './task-center/ExtractTask.vue'
 import ScanTask from './task-center/ScanTask.vue'
+import GenerateRecoveryTask from './task-center/recovery-task/GenerateRecovery.vue'
+import RecoverArchiveTask from './task-center/recovery-task/RecoverArchive.vue'
+import VerifyRecoveryTask from './task-center/recovery-task/VerifyRecovery.vue'
 
 const route = useRoute()
 
@@ -38,7 +42,24 @@ const taskTypes = ref<TaskType[]>([
         icon: 'pi pi-folder-open',
         component: markRaw(ExtractTask)
     },
-
+    {
+        id: 'generate-recovery',
+        name: '生成恢复文件',
+        icon: 'pi pi-database',
+        component: markRaw(GenerateRecoveryTask)
+    },
+    {
+        id: 'recover-archive',
+        name: '恢复归档数据',
+        icon: 'pi pi-replay',
+        component: markRaw(RecoverArchiveTask)
+    },
+    {
+        id: 'verify-recovery',
+        name: '校验恢复文件',
+        icon: 'pi pi-check-circle',
+        component: markRaw(VerifyRecoveryTask)
+    }
     // 后续可以添加更多任务类型，例如：
     // { 
     //   id: 'sync', 
@@ -65,23 +86,22 @@ const currentTask = computed(() => {
 <template>
     <div class="task-center-page">
         <h1 class="text-3xl font-bold mb-6 text-center text-primary-700">任务中心</h1>
-
-        <Splitter class="mb-6" style="height: calc(100vh - 200px)">
+        <Splitter class="mb-6">
             <!-- 左侧任务列表 -->
             <SplitterPanel :size="30" :minSize="20" class="flex flex-col">
-                <TaskList :task-types="taskTypes" />
+                <div class="flex flex-col h-full overflow-hidden">
+                    <TaskList :task-types="taskTypes" />
+                </div>
             </SplitterPanel>
 
             <!-- 右侧任务详情 -->
             <SplitterPanel :size="70" :minSize="50" class="flex flex-col">
-                <component :is="currentTask.component" />
+                <div class="flex flex-col h-full overflow-hidden">
+                    <component :is="currentTask.component" class="flex-1 overflow-y-auto" />
+                </div>
             </SplitterPanel>
         </Splitter>
     </div>
 </template>
 
-<style scoped>
-.task-center-page {
-    height: 100%;
-}
-</style>
+<style scoped></style>

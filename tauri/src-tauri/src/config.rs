@@ -5,6 +5,19 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+// 应用设置结构
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct AppSettings {
+    pub last_workspace: Option<String>,
+    pub last_root: Option<i64>,       // 记住上次选择的根目录ID
+    pub last_db_path: Option<String>, // 记住上次使用的数据库路径
+    pub window_width: Option<u32>,
+    pub window_height: Option<u32>,
+    pub window_x: Option<i32>,
+    pub window_y: Option<i32>,
+    // 可以添加更多设置项
+}
+
 // 工作区信息结构
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct Workspace {
@@ -70,6 +83,68 @@ pub fn get_config_workspace() -> Result<Vec<Workspace>, String> {
     }
 
     Ok(workspaces)
+}
+
+// 加载应用设置
+#[tauri::command]
+pub fn load_app_settings() -> Result<AppSettings, String> {
+    // 获取当前可执行文件的目录
+    let exe_path = env::current_exe().map_err(|e| e.to_string())?;
+    let app_dir = exe_path.parent().ok_or("无法获取应用目录".to_string())?;
+
+    // 构造.onearchive 目录路径
+    let onearchive_dir = app_dir.join(".onearchive");
+
+    // 构造应用设置文件路径
+    let settings_path = onearchive_dir.join("app_settings.json");
+
+    // 检查设置文件是否存在
+    if !settings_path.exists() {
+        // 如果设置文件不存在，返回默认设置
+        return Ok(AppSettings {
+            last_workspace: None,
+            last_root: None,
+            last_db_path: None,
+            window_width: None,
+            window_height: None,
+            window_x: None,
+            window_y: None,
+        });
+    }
+
+    // 读取设置文件
+    let settings_content = fs::read_to_string(&settings_path).map_err(|e| e.to_string())?;
+
+    // 解析 JSON
+    let settings: AppSettings =
+        serde_json::from_str(&settings_content).map_err(|e| e.to_string())?;
+
+    Ok(settings)
+}
+
+// 保存应用设置
+#[tauri::command]
+pub fn save_app_settings(settings: AppSettings) -> Result<(), String> {
+    // 获取当前可执行文件的目录
+    let exe_path = env::current_exe().map_err(|e| e.to_string())?;
+    let app_dir = exe_path.parent().ok_or("无法获取应用目录".to_string())?;
+
+    // 构造.onearchive 目录路径
+    let onearchive_dir = app_dir.join(".onearchive");
+
+    // 创建目录（如果不存在）
+    fs::create_dir_all(&onearchive_dir).map_err(|e| e.to_string())?;
+
+    // 构造应用设置文件路径
+    let settings_path = onearchive_dir.join("app_settings.json");
+
+    // 序列化设置
+    let settings_json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+
+    // 写入设置文件
+    fs::write(&settings_path, settings_json).map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 // 加载工作区详细配置

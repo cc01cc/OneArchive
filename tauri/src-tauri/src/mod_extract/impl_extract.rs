@@ -14,10 +14,11 @@ use tar::Archive as TarArchive;
 use crate::mod_database::constants::ChunkStatus;
 use crate::mod_database::constants::DirectoryStatus;
 use crate::mod_database::constants::FileStatus;
-use crate::mod_database::trait_database::DirectoryOperations;
-use crate::mod_database::trait_database::{
-    ArchiveChunkOperations, ArchiveMetadataOperations, MapFileChunkOperations, ViewOperations,
-};
+use crate::mod_database::dao::info_directory::InfoDirectoryDao;
+use crate::mod_database::dao::view_chunk::ViewChunkDao;
+use crate::mod_database::dao::view_file::ViewFileDao;
+use crate::mod_database::database::Database;
+
 use crate::mod_extract::model_extract::{ExtractProgress, ExtractTask};
 use crate::mod_extract::trait_extract::ExtractOperations;
 
@@ -28,9 +29,7 @@ struct ArchiveExtractor;
 impl ArchiveExtractor {
     /// 从归档中提取单个数据块
     fn extract_single_chunk(
-        archive_uri: &str,
-        chunk_relative_path: &str,
-        target_file_path: &Path,
+        archive_uri: &str, chunk_relative_path: &str, target_file_path: &Path,
     ) -> AnyResult<()> {
         // 确保目标文件的目录存在
         if let Some(parent) = target_file_path.parent() {
@@ -108,24 +107,13 @@ impl ArchiveExtractor {
 pub struct ExtractService;
 
 impl ExtractOperations for ExtractService {
-    fn extract_archive<D, F>(
-        &mut self,
-        task: &ExtractTask,
-        database: &D,
-        progress_callback: Option<F>,
+    fn extract_archive<F>(
+        &mut self, task: &ExtractTask, database: &Database, progress_callback: Option<F>,
     ) -> AnyResult<ExtractProgress>
     where
-        D: ArchiveChunkOperations
-            + DirectoryOperations
-            + MapFileChunkOperations
-            + ArchiveMetadataOperations
-            + ViewOperations,
         F: Fn(ExtractProgress),
     {
-        info!(
-            "开始解档任务：root_id={}, target_path={}",
-            task.root_id, task.target_path
-        );
+        info!("开始解档任务：root_id={}, target_path={}", task.root_id, task.target_path);
 
         // 验证和准备目标路径
         let target_path = Self::prepare_target_path(task)?;
@@ -201,18 +189,16 @@ impl ExtractService {
     }
 
     /// 创建目录结构
-    fn create_directory_structure<D, F>(
-        task: &ExtractTask,
-        database: &D,
-        target_path: &Path,
-        progress_callback: &Option<F>,
+    fn create_directory_structure<F>(
+        task: &ExtractTask, database: &Database, target_path: &Path, progress_callback: &Option<F>,
     ) -> AnyResult<()>
     where
-        D: DirectoryOperations,
         F: Fn(ExtractProgress),
     {
-        let dir_list = database
-            .find_directories_by_status_and_root_id(task.root_id, Some(DirectoryStatus::Health))?;
+        let directory_dao = InfoDirectoryDao::new(database.conn.clone());
+
+        let dir_list = directory_dao
+            .find_by_status_and_root_id(task.root_id, Some(DirectoryStatus::Health))?;
 
         info!("正在创建 {} 个目录结构", dir_list.len());
         for (index, directory) in dir_list.iter().enumerate() {
@@ -243,17 +229,14 @@ impl ExtractService {
     }
 
     /// 获取需要解档的文件列表
-    fn get_files_to_extract<D>(
-        task: &ExtractTask,
-        database: &D,
-    ) -> AnyResult<Vec<crate::mod_database::schema::ViewFile>>
-    where
-        D: ViewOperations,
-    {
+    fn get_files_to_extract(
+        task: &ExtractTask, database: &Database,
+    ) -> AnyResult<Vec<crate::mod_database::schema::ViewFile>> {
+        let view_file_dao = ViewFileDao::new(database.conn.clone());
         // 获取指定归档的文件列表
         // TODO 这里只获取了状态为 Health 的 file 需要考虑其他状态的 file 如何处理
-        let file_list = database
-            .find_view_files_by_root_id_and_status(task.root_id, Some(FileStatus::Health))?;
+        let file_list =
+            view_file_dao.find_by_root_id_and_status(task.root_id, Some(FileStatus::Health))?;
 
         if file_list.is_empty() {
             return Err(anyhow!("未找到任何文件：{}", task.root_id));
@@ -264,26 +247,17 @@ impl ExtractService {
     }
 
     /// 处理文件列表
-    fn process_files<D, F>(
-        task: &ExtractTask,
-        database: &D,
-        file_list: &[crate::mod_database::schema::ViewFile],
-        target_path: &Path,
-        progress: &mut ExtractProgress,
-        progress_callback: &Option<F>,
+    fn process_files<F>(
+        task: &ExtractTask, database: &Database,
+        file_list: &[crate::mod_database::schema::ViewFile], target_path: &Path,
+        progress: &mut ExtractProgress, progress_callback: &Option<F>,
     ) -> AnyResult<()>
     where
-        D: MapFileChunkOperations + ViewOperations,
         F: Fn(ExtractProgress),
     {
         // 处理每个文件
         for (index, file) in file_list.iter().enumerate() {
-            info!(
-                "正在处理文件 {}/{}: {}",
-                index + 1,
-                file_list.len(),
-                file.file_name
-            );
+            info!("正在处理文件 {}/{}: {}", index + 1, file_list.len(), file.file_name);
 
             // 更新当前文件信息
             progress.current_file = Some(file.file_name.clone());
@@ -299,10 +273,7 @@ impl ExtractService {
             )?;
             progress.processed_files += 1;
 
-            info!(
-                "已完成 {}/{} 个文件的解档",
-                progress.processed_files, progress.total_files
-            );
+            info!("已完成 {}/{} 个文件的解档", progress.processed_files, progress.total_files);
             Self::update_progress(progress_callback, progress);
         }
 
@@ -310,22 +281,17 @@ impl ExtractService {
     }
 
     /// 处理单个文件
-    fn process_single_file<D, F>(
-        task: &ExtractTask,
-        database: &D,
-        file: &crate::mod_database::schema::ViewFile,
-        target_path: &Path,
-        progress: &mut ExtractProgress,
-        progress_callback: &Option<F>,
+    fn process_single_file<F>(
+        task: &ExtractTask, database: &Database, file: &crate::mod_database::schema::ViewFile,
+        target_path: &Path, progress: &mut ExtractProgress, progress_callback: &Option<F>,
     ) -> AnyResult<()>
     where
-        D: MapFileChunkOperations + ViewOperations,
         F: Fn(ExtractProgress),
     {
+        let view_chunk_dao = ViewChunkDao::new(database.conn.clone());
         // 构造目标文件路径
-        let file_path = target_path
-            .join(file.directory_path.as_deref().unwrap_or(""))
-            .join(&file.file_name);
+        let file_path =
+            target_path.join(file.directory_path.as_deref().unwrap_or("")).join(&file.file_name);
 
         // 检查是否需要覆盖已存在的文件
         if file_path.exists() && !task.overwrite {
@@ -335,7 +301,7 @@ impl ExtractService {
             return Ok(());
         }
 
-        let chunk_list = database.find_view_chunks_by_file_id(file.file_id)?;
+        let chunk_list = view_chunk_dao.find_by_file_id(file.file_id)?;
 
         // 根据数据块数量决定处理方式
         match chunk_list.len() {
@@ -355,11 +321,7 @@ impl ExtractService {
                 )?;
             }
             _ => {
-                info!(
-                    "正在提取分卷数据块文件：{} (共{}个分卷)",
-                    file.file_name,
-                    chunk_list.len()
-                );
+                info!("正在提取分卷数据块文件：{} (共{}个分卷)", file.file_name, chunk_list.len());
                 Self::process_volume_chunks(&chunk_list, &file_path, progress, progress_callback)?;
             }
         }
@@ -370,10 +332,8 @@ impl ExtractService {
 
     /// 处理单个数据块
     fn process_single_chunk<F>(
-        chunk: crate::mod_database::schema::ViewChunk,
-        file_path: &Path,
-        progress: &mut ExtractProgress,
-        progress_callback: &Option<F>,
+        chunk: crate::mod_database::schema::ViewChunk, file_path: &Path,
+        progress: &mut ExtractProgress, progress_callback: &Option<F>,
     ) -> AnyResult<()>
     where
         F: Fn(ExtractProgress),
@@ -401,10 +361,8 @@ impl ExtractService {
 
     /// 处理分卷数据块
     fn process_volume_chunks<F>(
-        chunk_list: &[crate::mod_database::schema::ViewChunk],
-        file_path: &Path,
-        progress: &mut ExtractProgress,
-        progress_callback: &Option<F>,
+        chunk_list: &[crate::mod_database::schema::ViewChunk], file_path: &Path,
+        progress: &mut ExtractProgress, progress_callback: &Option<F>,
     ) -> AnyResult<()>
     where
         F: Fn(ExtractProgress),

@@ -144,6 +144,17 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import { useGlobalStore } from '../store/global';
 import { useConfirm } from 'primevue/useconfirm';
 
+// 定义应用设置接口
+interface AppSettings {
+    last_workspace: string | null;
+    last_root: number | null;
+    last_db_path: string | null;
+    window_width: number | null;
+    window_height: number | null;
+    window_x: number | null;
+    window_y: number | null;
+}
+
 // 定义工作区配置接口
 interface WorkspaceConfig {
     db_path?: string;
@@ -186,11 +197,30 @@ const isWorkspaceActive = computed(() => {
 });
 
 // 激活工作区
-const activateWorkspace = (workspace: WorkspaceDetail) => {
+const activateWorkspace = async (workspace: WorkspaceDetail) => {
     if (workspace) {
         globalStore.setWorkspace(workspace.path);
         globalStore.setDbPath(workspace.dbPath);
-        toast.add({ severity: 'success', summary: '成功', detail: '工作区已激活', life: 3000 });
+
+        try {
+            // 保存当前工作区到应用设置
+            await invoke('save_app_settings', {
+                settings: {
+                    last_workspace: workspace.path,
+                    last_root: null, // 根目录将在使用时设置
+                    last_db_path: workspace.dbPath,
+                    window_width: null,
+                    window_height: null,
+                    window_x: null,
+                    window_y: null
+                }
+            });
+
+            toast.add({ severity: 'success', summary: '成功', detail: '工作区已激活并已保存设置', life: 3000 });
+        } catch (error) {
+            console.error('保存应用设置失败：', error);
+            toast.add({ severity: 'error', summary: '错误', detail: '工作区已激活但保存设置失败', life: 3000 });
+        }
     }
 };
 

@@ -8,15 +8,21 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ArchiveGroupManager: typeof import('./src/components/recovery/ArchiveGroupManager.vue')['default']
     Button: typeof import('primevue/button')['default']
     Card: typeof import('primevue/card')['default']
     Dialog: typeof import('primevue/dialog')['default']
+    Dropdown: typeof import('primevue/dropdown')['default']
+    GenerationProgress: typeof import('./src/components/recovery/GenerationProgress.vue')['default']
+    GenerationResult: typeof import('./src/components/recovery/GenerationResult.vue')['default']
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Message: typeof import('primevue/message')['default']
     ProgressBar: typeof import('primevue/progressbar')['default']
+    RecoveryConfigForm: typeof import('./src/components/recovery/RecoveryConfigForm.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Select: typeof import('primevue/select')['default']
     Toast: typeof import('primevue/toast')['default']
   }
   export interface GlobalDirectives {

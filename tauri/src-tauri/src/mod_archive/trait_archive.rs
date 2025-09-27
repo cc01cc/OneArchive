@@ -5,34 +5,22 @@ use anyhow::Result as AnyResult;
 use std::fmt;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tar::Builder;
 
+use crate::mod_archive::utils_archive::ArchiveProgress;
+use crate::mod_database::database::Database;
 use crate::mod_database::trait_database::{
-    ArchiveChunkOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations,
-    MapFileChunkOperations, RootOperations, StatusOperations, ViewOperations,
+    ArchiveChunkOperations, DirectoryOperations, FileOperations, MapFileChunkOperations,
+    RootOperations, StatusOperations, ViewOperations,
 };
+use crate::utils::{EventType, ProgressEvent};
 
-/// 归档进度信息
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct ArchiveProgress {
-    /// 总文件数
-    pub total_files: usize,
-    /// 已处理文件数
-    pub processed_files: usize,
-    /// 已处理字节数
-    pub processed_bytes: u64,
-    /// 总字节数
-    pub total_bytes: u64,
-    /// 当前正在处理的文件
-    pub current_file: Option<String>,
-    /// 是否完成
-    pub completed: bool,
-    /// 错误信息（如果有）
-    pub error: Option<String>,
-}
+
 
 /// 归档上下文，用于管理当前归档过程中的状态
 pub struct ArchiveContext {
+    pub database: Arc<Database>,
     pub archive_file_prefix: String,
     pub archive_directory: String,
     pub archive_limit_size: i64,
@@ -60,11 +48,11 @@ impl fmt::Debug for ArchiveContext {
 
 impl ArchiveContext {
     pub fn new(
-        archive_file_prefix: String,
-        archive_directory: String,
+        database: Arc<Database>, archive_file_prefix: String, archive_directory: String,
         archive_limit_size: i64,
     ) -> Self {
         Self {
+            database,
             archive_file_prefix,
             archive_directory,
             archive_limit_size,
@@ -92,6 +80,7 @@ impl ArchiveContext {
 
 /// 归档操作 trait
 pub trait ArchiveOperations {
+
     /// 将指定根目录下的所有文件添加到归档中
     /// 对应 Java 中 ArchiveIn.java 的 archiveFileInDb 方法
     ///
@@ -103,21 +92,9 @@ pub trait ArchiveOperations {
     ///
     /// # 返回值
     /// 返回操作结果
-    fn archive_file_in_db<D, F>(
-        &self,
-        root_dir: &str,
-        context: &mut ArchiveContext,
-        database: &D,
-        progress_callback: Option<F>,
+    fn archive<F>(
+        &self, root_dir: &str, context: &mut ArchiveContext, progress_callback: Option<F>,
     ) -> AnyResult<()>
     where
-        D: ViewOperations
-            + FileOperations
-            + DirectoryOperations
-            + MapFileChunkOperations
-            + ArchiveChunkOperations
-            + ArchiveMetadataOperations
-            + RootOperations
-            + StatusOperations,
-        F: Fn(ArchiveProgress);
+        F: Fn(ProgressEvent<ArchiveProgress>);
 }

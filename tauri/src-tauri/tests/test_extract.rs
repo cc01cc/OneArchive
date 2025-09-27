@@ -27,32 +27,24 @@ mod common;
 use common::*;
 
 /// 设置测试用的归档数据
-fn setup_test_archive_data(
-    source_dir: &Path,
-    archive_dir: &Path,
-    database: &Database,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_test_archive_data(env: &TestEnvironment) -> Result<(), Box<dyn std::error::Error>> {
     let scan_service = ScanServices::new();
 
     scan_service.scan_and_save_directory_with_events(
-        source_dir,
-        database,
+        &env.source_dir,
+        &env.database,
         None::<fn(ScanProgress)>,
     )?;
 
     let archive_in_service = ArchiveServices::default();
     let mut context = ArchiveContext::new(
+        env.database.clone(),
         "test_archive".to_string(),
-        archive_dir.to_string_lossy().to_string(),
+        env.archive_dir.to_string_lossy().to_string(),
         1024 * 1024, // 1MB 限制
     );
 
-    archive_in_service.archive_file_in_db(
-        source_dir.to_str().unwrap(),
-        &mut context,
-        database,
-        None::<fn(_)>,
-    )?;
+    archive_in_service.archive(env.source_dir.to_str().unwrap(), &mut context, None::<fn(_)>)?;
     Ok(())
 }
 
@@ -67,14 +59,8 @@ fn assert_basic_extracted_files(extract_dir: &Path) -> Result<(), Box<dyn std::e
     let content1 = fs::read_to_string(&test1_path)?;
     let content2 = fs::read_to_string(&test2_path)?;
 
-    assert_eq!(
-        content1, "This is test file 1 content",
-        "test1.txt 内容应该正确"
-    );
-    assert_eq!(
-        content2, "This is test file 2 content",
-        "test2.txt 内容应该正确"
-    );
+    assert_eq!(content1, "This is test file 1 content", "test1.txt 内容应该正确");
+    assert_eq!(content2, "This is test file 2 content", "test2.txt 内容应该正确");
     Ok(())
 }
 
@@ -90,18 +76,13 @@ fn assert_extracted_files(extract_dir: &Path) -> Result<(), Box<dyn std::error::
     assert!(subfile_path.exists(), "subfile.txt 应该存在");
 
     let subfile_content = fs::read_to_string(&subfile_path)?;
-    assert_eq!(
-        subfile_content, "This is a file in subdirectory",
-        "subfile.txt 内容应该正确"
-    );
+    assert_eq!(subfile_content, "This is a file in subdirectory", "subfile.txt 内容应该正确");
     Ok(())
 }
 
 /// 执行解档操作的辅助函数
 fn perform_extraction(
-    env: &TestEnvironment,
-    root_id: i64,
-    overwrite: bool,
+    env: &TestEnvironment, root_id: i64, overwrite: bool,
 ) -> Result<ExtractProgress, Box<dyn std::error::Error>> {
     let mut extract_service = ExtractService::new();
     let task = ExtractTask {
@@ -110,9 +91,7 @@ fn perform_extraction(
         overwrite,
     };
 
-    Ok(extract_service
-        .extract_archive(&task, &env.database, None::<fn(_)>)
-        .map_err(|e| e)?)
+    Ok(extract_service.extract_archive(&task, &env.database, None::<fn(_)>).map_err(|e| e)?)
 }
 
 /// 测试基本解档功能
@@ -123,7 +102,7 @@ fn test_extract_archive_integration() -> Result<(), Box<dyn std::error::Error>> 
 
     let env = TestEnvironment::new()?;
     create_test_files_with_subdir(&env.source_dir)?;
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
     info!("测试数据库已归档数据初始化完成，开始测试解档...");
 
     let progress = perform_extraction(&env, 1, true)?;
@@ -145,17 +124,14 @@ fn test_extract_with_progress_callback() -> Result<(), Box<dyn std::error::Error
 
     let env = TestEnvironment::new()?;
     create_basic_test_files(&env.source_dir)?;
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
 
     let progress_updates = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let progress_updates_clone = progress_updates.clone();
 
     let progress_callback = move |progress: ExtractProgress| {
         progress_updates_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        println!(
-            "进度更新：{}/{} files processed",
-            progress.processed_files, progress.total_files
-        );
+        println!("进度更新：{}/{} files processed", progress.processed_files, progress.total_files);
     };
 
     let mut extract_service = ExtractService::new();
@@ -188,7 +164,7 @@ fn test_extract_with_overwrite_option() -> Result<(), Box<dyn std::error::Error>
 
     let env = TestEnvironment::new()?;
     create_basic_test_files(&env.source_dir)?;
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
 
     // 创建与归档中同名的文件
     fs::write(env.extract_dir.join("test1.txt"), "existing content")?;
@@ -212,7 +188,7 @@ fn test_extract_without_overwrite_option() -> Result<(), Box<dyn std::error::Err
 
     let env = TestEnvironment::new()?;
     create_basic_test_files(&env.source_dir)?;
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
 
     // 创建与归档中同名的文件
     let existing_content = "existing content";
@@ -259,7 +235,7 @@ fn test_extract_with_volume_chunks() -> Result<(), Box<dyn std::error::Error>> {
     let large_content = "A".repeat(2 * 1024 * 1024); // 2MB 文件
     fs::write(env.source_dir.join("large_file.txt"), large_content)?;
 
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
 
     let progress = perform_extraction(&env, 1, true)?;
 
@@ -284,12 +260,9 @@ fn test_extract_with_special_filenames() -> Result<(), Box<dyn std::error::Error
 
     fs::write(env.source_dir.join("文件.txt"), "Chinese filename content")?;
     fs::write(env.source_dir.join("файл.txt"), "Cyrillic filename content")?;
-    fs::write(
-        env.source_dir.join("file with spaces.txt"),
-        "File with spaces content",
-    )?;
+    fs::write(env.source_dir.join("file with spaces.txt"), "File with spaces content")?;
 
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
 
     let progress = perform_extraction(&env, 1, true)?;
 
@@ -313,7 +286,7 @@ fn test_extract_with_corrupted_chunks() -> Result<(), Box<dyn std::error::Error>
 
     let env = TestEnvironment::new()?;
     create_basic_test_files(&env.source_dir)?;
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
 
     // 模拟数据块文件损坏
     fs::remove_dir_all(&env.archive_dir)?;
@@ -339,7 +312,7 @@ fn test_extract_empty_files() -> Result<(), Box<dyn std::error::Error>> {
     // 创建空文件
     fs::File::create(env.source_dir.join("empty.txt"))?;
 
-    setup_test_archive_data(&env.source_dir, &env.archive_dir, &env.database)?;
+    setup_test_archive_data(&env)?;
 
     let progress = perform_extraction(&env, 1, true)?;
 

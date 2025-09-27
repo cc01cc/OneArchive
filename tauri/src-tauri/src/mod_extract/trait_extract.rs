@@ -1,10 +1,8 @@
 //! 解档操作 trait 定义
 
+use crate::mod_database::database::Database;
+use crate::mod_extract::model_extract::{ExtractProgress, ExtractTask};
 use anyhow::Result as AnyResult;
-use crate::mod_extract::model_extract::{ExtractTask, ExtractProgress};
-use crate::mod_database::trait_database::{
-    ArchiveChunkOperations, ArchiveMetadataOperations, DirectoryOperations, MapFileChunkOperations, ViewOperations
-};
 
 /// 解档操作 trait
 pub trait ExtractOperations {
@@ -17,13 +15,9 @@ pub trait ExtractOperations {
     ///
     /// # 返回值
     /// 返回操作结果
-    fn extract_archive<D, F>(
-        &mut self,
-        task: &ExtractTask,
-        database: &D,
-        progress_callback: Option<F>,
+    fn extract_archive<F>(
+        &mut self, task: &ExtractTask, database: &Database, progress_callback: Option<F>,
     ) -> AnyResult<ExtractProgress>
     where
-        D: ArchiveChunkOperations +DirectoryOperations+ MapFileChunkOperations + ArchiveMetadataOperations + ViewOperations,
         F: Fn(ExtractProgress);
 }

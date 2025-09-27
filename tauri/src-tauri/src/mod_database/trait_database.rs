@@ -1,5 +1,8 @@
 //! 数据库操作 trait 定义
 //! 定义各种数据库操作的接口
+//! 如果 传入参数超过 2 个, 则使用结构化参数 params
+
+use crate::mod_database::schema::CreateArchiveMetadataParams;
 
 use super::constants::{DatabaseTableName, DirectoryStatus, FileStatus};
 use super::schema::{InfoDirectory, InfoFile, InfoRoot, ViewFile};
@@ -8,10 +11,6 @@ use rusqlite::{Connection, Result as SqliteResult};
 /// 数据库根目录操作 trait
 pub trait RootOperations {
     /// 添加根目录信息
-    ///
-    /// # 参数
-    /// * `root_path` - 根目录路径
-    /// * `root_name` - 根目录名称
     ///
     /// # 返回值
     /// 返回插入记录的 ID
@@ -23,9 +22,6 @@ pub trait RootOperations {
     ) -> SqliteResult<i64>;
 
     /// 根据路径查找根目录信息
-    ///
-    /// # 参数
-    /// * `root_path` - 根目录路径
     ///
     /// # 返回值
     /// 返回根目录信息
@@ -57,27 +53,17 @@ pub trait DirectoryOperations {
 
     /// 插入目录信息
     ///
-    /// # 参数
-    /// * [directory](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L34-L34) - 目录信息
-    ///
     /// # 返回值
     /// 返回插入记录的 ID
     fn insert_directory(&self, directory: &InfoDirectory) -> SqliteResult<i64>;
 
     /// 更新目录信息
     ///
-    /// # 参数
-    /// * [directory](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L34-L34) - 目录信息
-    ///
     /// # 返回值
     /// 返回操作结果
     fn update_directory(&self, directory: &InfoDirectory) -> SqliteResult<()>;
 
     /// 根据路径查找目录 ID
-    ///
-    /// # 参数
-    /// * `root_id` - 根目录 ID
-    /// * [path](\one-archive-api\src\main\java\com\cc01cc\onearchive\api\service\ArchiveService.java#L32-L33) - 目录路径
     ///
     /// # 返回值
     /// 返回目录 ID
@@ -155,63 +141,6 @@ pub trait FileOperations {
     fn update_file(&self, file: &InfoFile) -> SqliteResult<()>;
 }
 
-/// 数据库归档元数据操作 trait
-pub trait ArchiveMetadataOperations {
-    /// 插入归档元数据
-    ///
-    /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
-    ///
-    /// # 返回值
-    /// 返回插入记录的 ID
-    fn insert_archive_metadata(
-        &self,
-        archive: &super::schema::ArchiveMetadata,
-    ) -> SqliteResult<i64>;
-
-    /// 更新归档元数据
-    ///
-    /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
-    ///
-    /// # 返回值
-    /// 返回操作结果
-    fn update_archive_metadata(&self, archive: &super::schema::ArchiveMetadata)
-    -> SqliteResult<()>;
-
-    /// 根据 ID 查找归档元数据
-    ///
-    /// # 参数
-    ///
-    /// # 返回值
-    /// 返回归档元数据
-    fn find_archive_metadata_by_id(
-        &self,
-        id: i64,
-    ) -> SqliteResult<Option<super::schema::ArchiveMetadata>>;
-
-    /// 根据名称查找归档元数据
-    ///
-    /// # 参数
-    ///
-    /// # 返回值
-    /// 返回归档元数据
-    fn find_archive_metadata_by_name(
-        &self,
-        name: &str,
-    ) -> SqliteResult<Option<super::schema::ArchiveMetadata>>;
-
-    /// 根据状态查找归档元数据
-    ///
-    /// # 参数
-    ///
-    /// # 返回值
-    /// 返回归档元数据列表
-    fn find_archive_metadata_by_status(
-        &self,
-        status: Option<super::constants::ArchiveStatus>,
-    ) -> SqliteResult<Vec<super::schema::ArchiveMetadata>>;
-}
 
 /// 数据库归档数据块操作 trait
 pub trait ArchiveChunkOperations {
@@ -278,17 +207,11 @@ pub trait ArchiveChunkOperations {
 pub trait MapFileChunkOperations {
     /// 插入文件与归档数据块映射
     ///
-    /// # 参数
-    /// * [map](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\mapper\InfoRootRowMapper.java#L26-L36) - 映射信息
-    ///
     /// # 返回值
     /// 返回插入记录的 ID
     fn insert_map_file_chunk(&self, map: &super::schema::MapFileChunk) -> SqliteResult<i64>;
 
     /// 更新文件与归档数据块映射
-    ///
-    /// # 参数
-    /// * [map](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\mapper\InfoRootRowMapper.java#L26-L36) - 映射信息
     ///
     /// # 返回值
     /// 返回操作结果

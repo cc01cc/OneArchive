@@ -1,6 +1,7 @@
 //! 归档操作 trait 定义
 //! 定义各种归档操作的接口
 
+use crate::mod_database::database::Database;
 use crate::mod_database::trait_database::DirectoryOperations;
 use crate::mod_database::trait_database::FileOperations;
 use crate::mod_database::trait_database::RootOperations;
@@ -27,14 +28,10 @@ pub trait DirectoryScanOperations {
     ///
     /// # 返回值
     /// 返回操作结果
-    fn scan_and_save_directory_with_events<D, F>(
-        &self,
-        start_path: &Path,
-        database: &D,
-        progress_callback: Option<F>,
+    fn scan_and_save_directory_with_events<F>(
+        &self, start_path: &Path, database: &Database, progress_callback: Option<F>,
     ) -> AnyResult<()>
     where
-        D: RootOperations + DirectoryOperations + FileOperations + StatusOperations,
         F: Fn(ScanProgress);
 }
 
@@ -47,8 +44,5 @@ pub trait DirectoryStatisticsOperations {
     ///
     /// # 返回值
     /// 返回目录统计信息
-    fn get_directory_statistics(
-        &self,
-        path: &Path,
-    ) -> AnyResult<DirectoryStatistics>;
+    fn get_directory_statistics(&self, path: &Path) -> AnyResult<DirectoryStatistics>;
 }

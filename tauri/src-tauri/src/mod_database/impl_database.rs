@@ -1,28 +1,29 @@
 //! 数据库仓库实现
 //! 实现数据库操作的具体逻辑
 
-use crate::mod_database::constants::{ArchiveStatus, ChunkStatus, MapFileChunkStatus};
-use crate::mod_database::impl_initialize;
-use crate::mod_database::schema::{ArchiveChunk, ArchiveMetadata, MapFileChunk, ViewChunk};
-
 use super::constants::{DatabaseTableName, DirectoryStatus, FileStatus};
 use super::database::Database;
 use super::schema::{InfoDirectory, InfoFile, InfoRoot, ViewFile};
 use super::trait_database::{
-    ArchiveChunkOperations, ArchiveMetadataOperations, DirectoryOperations, FileOperations,
-    InitializationOperations, MapFileChunkOperations, RootOperations, StatusOperations,
-    ViewOperations,
+    ArchiveChunkOperations, DirectoryOperations, FileOperations, InitializationOperations,
+    MapFileChunkOperations, RootOperations, StatusOperations, ViewOperations,
 };
+use crate::mod_database::common::DatabaseCommonOperations;
+use crate::mod_database::constants::{ArchiveStatus, ChunkStatus, MapFileChunkStatus};
+use crate::mod_database::schema::{
+    ArchiveChunk, ArchiveMetadata, CreateArchiveMetadataParams, MapFileChunk, ViewChunk,
+};
+use crate::mod_database::{impl_initialize, queries};
 use log::warn;
-use rusqlite::{Connection, Result as SqliteResult, params};
+use rusqlite::{Connection, Result as SqliteResult, named_params, params};
 
 // 实现根目录操作 trait
-impl RootOperations for Database {
+impl RootOperations for Database{
     /// 添加根目录信息
     ///
     /// # 参数
-    /// * `root_path` - 根目录路径
-    /// * `root_name` - 根目录名称
+    /// * [root_path](file://w:\zeogit\OneArchive-backend\tauri\src\types\recovery.ts#L18-L18) - 根目录路径
+    /// * [root_name](file://w:\zeogit\OneArchive-backend\tauri\src\types\recovery.ts#L19-L19) - 根目录名称
     ///
     /// # 返回值
     /// 返回插入记录的 ID
@@ -46,7 +47,7 @@ impl RootOperations for Database {
     /// 根据路径查找根目录信息
     ///
     /// # 参数
-    /// * `root_path` - 根目录路径
+    /// * [root_path](file://w:\zeogit\OneArchive-backend\tauri\src\types\recovery.ts#L18-L18) - 根目录路径
     ///
     /// # 返回值
     /// 返回根目录信息
@@ -446,142 +447,6 @@ impl FileOperations for Database {
             ],
         )?;
         Ok(())
-    }
-}
-
-// 实现归档元数据操作 trait
-impl ArchiveMetadataOperations for Database {
-    /// 插入归档元数据
-    ///
-    /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
-    ///
-    /// # 返回值
-    /// 返回插入记录的 ID
-    fn insert_archive_metadata(&self, archive: &ArchiveMetadata) -> SqliteResult<i64> {
-        let normalized_path =
-            Self::normalize_directory_path(&Some(archive.archive_uri.to_string()));
-
-        self.conn.execute(
-            "INSERT INTO archive_metadata (archive_uri, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,?9)",
-            params![
-                normalized_path,
-                archive.archive_name,
-                archive.archive_limit_size,
-                archive.archive_hash,
-                archive.is_compressed,
-                archive.compressed_algorithm,
-                archive.is_encrypted,
-                archive.encryption_algorithm,
-                archive.status.as_str()
-            ],
-        )?;
-
-        Ok(self.conn.last_insert_rowid())
-    }
-
-    /// 更新归档元数据
-    ///
-    /// # 参数
-    /// * [archive](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\config\ArchiveConfig.java#L26-L26) - 归档元数据
-    ///
-    /// # 返回值
-    /// 返回操作结果
-    fn update_archive_metadata(&self, archive: &ArchiveMetadata) -> SqliteResult<()> {
-        self.conn.execute(
-            "UPDATE archive_metadata SET archive_name = ?1, archive_limit_size = ?2, archive_hash = ?3, is_compressed = ?4, compressed_algorithm = ?5, is_encrypted = ?6, encryption_algorithm = ?7, status = ?8, updated_at = strftime('%s', 'now')
-             WHERE id = ?9",
-            params![
-                archive.archive_name,
-                archive.archive_limit_size,
-                archive.archive_hash.as_ref(),
-                archive.is_compressed,
-                archive.compressed_algorithm.as_ref(),
-                archive.is_encrypted,
-                archive.encryption_algorithm.as_ref(),
-                archive.status.as_str(),
-                archive.id
-            ],
-        )?;
-        Ok(())
-    }
-
-    /// 根据 ID 查找归档元数据
-    ///
-    /// # 参数
-    /// * [id](\one-archive-core\src\main\java\com\cc01cc\onearchive\core\entity\MapFileChunk.java#L24-L24) - 归档 ID
-    ///
-    /// # 返回值
-    /// 返回归档元数据
-    fn find_archive_metadata_by_id(&self, id: i64) -> SqliteResult<Option<ArchiveMetadata>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
-             FROM archive_metadata WHERE id = ?1"
-        )?;
-
-        let mut rows = stmt.query(params![id])?;
-
-        if let Some(row) = rows.next()? {
-            Ok(Some(row.try_into()?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// 根据名称查找归档元数据
-    ///
-    /// # 参数
-    /// * [name](\one-archive-api\src\main\java\com\cc01cc\onearchive\api\service\ArchiveService.java#L29-L30) - 归档名称
-    ///
-    /// # 返回值
-    /// 返回归档元数据
-    fn find_archive_metadata_by_name(&self, name: &str) -> SqliteResult<Option<ArchiveMetadata>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
-             FROM archive_metadata WHERE archive_name = ?1"
-        )?;
-
-        let mut rows = stmt.query(params![name])?;
-
-        if let Some(row) = rows.next()? {
-            Ok(Some(row.try_into()?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// 根据状态查找归档元数据
-    ///
-    /// # 参数
-    ///
-    /// # 返回值
-    /// 返回归档元数据列表
-    fn find_archive_metadata_by_status(
-        &self,
-        status: Option<ArchiveStatus>,
-    ) -> SqliteResult<Vec<ArchiveMetadata>> {
-        let sql = if status.is_some() {
-            "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
-             FROM archive_metadata WHERE status = ?1"
-        } else {
-            "SELECT id, archive_name, archive_limit_size, archive_hash, is_compressed, compressed_algorithm, is_encrypted, encryption_algorithm, status, created_at, updated_at 
-             FROM archive_metadata"
-        };
-
-        let mut stmt = self.conn.prepare(sql)?;
-        let mut rows = if let Some(ref status) = status {
-            stmt.query(params![status.as_str()])?
-        } else {
-            stmt.query([])?
-        };
-
-        let mut archives = Vec::new();
-        while let Some(row) = rows.next()? {
-            let archive = row.try_into()?;
-            archives.push(archive);
-        }
-        Ok(archives)
     }
 }
 

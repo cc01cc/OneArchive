@@ -17,7 +17,7 @@ import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import ProgressBar from "primevue/progressbar";
-import Dropdown from "primevue/dropdown";
+
 import Checkbox from "primevue/checkbox";
 import { useToast } from "primevue/usetoast";
 
@@ -299,7 +299,7 @@ onMounted(() => {
                     <!-- 根目录选择 -->
                     <div class="field">
                         <label for="rootId" class="block text-sm font-medium mb-2">根目录 *</label>
-                        <Dropdown id="rootId" v-model="extractConfig.rootId" :options="rootList" option-label="name"
+                        <Select id="rootId" v-model="extractConfig.rootId" :options="rootList" option-label="name"
                             option-value="id" :placeholder="rootList.length > 0 ? '请选择根目录' : '请先选择数据库文件'"
                             :disabled="isExtracting || rootList.length === 0" class="w-full"
                             :class="{ 'p-invalid': errors.rootId }" />

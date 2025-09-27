@@ -1,7 +1,3 @@
-<!-- TODO 存在的问题
-- 右上角的 当前工作区，默认值不正确，需要从已有的工作区中获取
-- 需要固定右上角工作区的宽度，避免不同宽度，UI 布局混乱
--->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -22,7 +18,21 @@ interface Workspace {
     name: string;
     path: string;
 }
+// 定义应用设置接口
+interface AppSettings {
+    last_workspace: string | null;
+    last_root: number | null;
+    last_db_path: string | null;
+    window_width: number | null;
+    window_height: number | null;
+    window_x: number | null;
+    window_y: number | null;
+}
+
 onMounted(async () => {
+    // 加载应用设置
+    await loadAppSettings();
+
     // 获取当前工作区
     await getCurrentWorkspace();
 
@@ -40,6 +50,25 @@ onMounted(async () => {
         openSettings();
     }
 });
+// 加载应用设置
+const loadAppSettings = async () => {
+    try {
+        const settings: AppSettings = await invoke('load_app_settings');
+
+        // 如果有上次工作区设置，则设置为当前工作区
+        if (settings.last_workspace) {
+            globalStore.setWorkspace(settings.last_workspace);
+        }
+
+        // 如果有上次数据库路径设置，则设置为当前数据库路径
+        if (settings.last_db_path) {
+            globalStore.setDbPath(settings.last_db_path);
+        }
+    } catch (error) {
+        console.error('加载应用设置失败：', error);
+    }
+};
+
 // 获取当前工作区信息
 const getCurrentWorkspace = async () => {
     try {
@@ -214,11 +243,13 @@ const handleItemClick = (item: ExtendedMenuItem) => {
         item.command({ originalEvent: new Event('click'), item } as any)
     }
 }
+
 </script>
 
 <template>
-    <div class="min-h-screen flex flex-col ">
-        <header>
+    <div class="h-screen flex flex-col">
+
+        <header class="flex-shrink-0">
             <!-- // TODO 优化导航栏折叠后，宽屏显示效果 600px-900px -->
             <Menubar :model="navItems" class="p-4 mt-2" style="border-radius: 3rem">
                 <template #start>
@@ -251,17 +282,18 @@ const handleItemClick = (item: ExtendedMenuItem) => {
             </Menubar>
         </header>
 
-        <main class="flex-1 p-4">
-            <div class="debug-info text-xs p-2 ">
+        <main class="flex-1 overflow-hidden p-4">
+            <div class="debug-info text-xs p-2">
                 当前路由：{{ route.name }} | 路径：{{ route.path }}
             </div>
-            <router-view />
+            <div class="h-full overflow-y-auto">
+                <router-view />
+            </div>
         </main>
 
-        <footer class=" p-4 text-center text-sm text-gray-600 border-t">
+        <footer class="flex-shrink-0 p-4 text-center text-sm text-gray-600 border-t">
             One Archive &copy; {{ new Date().getFullYear() }}
         </footer>
     </div>
 </template>
-
 <style scoped></style>

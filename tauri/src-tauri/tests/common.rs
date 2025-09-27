@@ -4,6 +4,7 @@
 use log::info;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 use tempfile::TempDir;
 
 use one_archive_lib::mod_database::database::Database;
@@ -12,7 +13,7 @@ use one_archive_lib::mod_database::trait_database::InitializationOperations;
 /// 通用测试环境结构体
 pub struct TestEnvironment {
     pub temp_dir: TempDir,
-    pub database: Database,
+    pub database: Arc<Database>,
     pub source_dir: std::path::PathBuf,
     pub archive_dir: std::path::PathBuf,
     pub extract_dir: std::path::PathBuf,
@@ -38,7 +39,7 @@ impl TestEnvironment {
 
         Ok(TestEnvironment {
             temp_dir,
-            database,
+            database: Arc::new(database),
             source_dir,
             archive_dir,
             extract_dir,
@@ -137,8 +138,7 @@ pub fn create_nested_test_structure(
 
 /// 创建多个根目录测试结构
 pub fn create_multiple_root_test_structures(
-    root_path1: &Path,
-    root_path2: &Path,
+    root_path1: &Path, root_path2: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let dir1 = root_path1.join("dir1");
     fs::create_dir_all(&dir1)?;

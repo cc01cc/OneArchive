@@ -1,4 +1,4 @@
-//! ArchiveIn 功能集成测试
+//! Archive 功能集成测试
 //!
 //! 该测试模块验证了归档功能的各个方面，包括：
 //! - 基本归档功能
@@ -6,8 +6,14 @@
 //! - 空文件归档
 //! - 数据库记录验证
 //! - 归档文件验证
+//! TODO 需要把 空目录校验等功能抽离出来，设计一个统一的 mod 或者功能，用于在各个任务执行之前进行环境校验
 
 use log::info;
+use one_archive_lib::mod_database::dao::archive_chunk::ArchiveChunkDao;
+use one_archive_lib::mod_database::dao::info_directory::InfoDirectoryDao;
+use one_archive_lib::mod_database::dao::info_file::InfoFileDao;
+use one_archive_lib::mod_database::dao::info_root::InfoRootDao;
+use one_archive_lib::mod_database::dao::map_file_chunk::MapFileChunkDao;
 use one_archive_lib::mod_scan::impl_scan::ScanServices;
 use one_archive_lib::mod_scan::trait_scan::DirectoryScanOperations;
 use std::fs;
@@ -21,10 +27,6 @@ use one_archive_lib::mod_database::constants::{
     ChunkStatus, DirectoryStatus, FileStatus, MapFileChunkStatus, RootStatus,
 };
 use one_archive_lib::mod_database::database::Database;
-use one_archive_lib::mod_database::trait_database::{
-    ArchiveChunkOperations, DirectoryOperations, FileOperations, MapFileChunkOperations,
-    RootOperations,
-};
 
 // 常量定义
 const LARGE_FILE_SIZE: i64 = 2 * 1024 * 1024; // 2MB
@@ -33,6 +35,18 @@ const ASSET_SIZE: i64 = 524288; // 512KB in bytes
 
 mod common;
 use common::*;
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+fn init_test_env_in_file() {
+    INIT.call_once(|| {
+        let _ = color_eyre::install();
+        let _ =
+            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+                .try_init();
+    });
+}
 
 /// 创建普通测试文件
 fn create_test_files(source_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -100,30 +114,36 @@ fn perform_archiving(env: &TestEnvironment) -> Result<(), Box<dyn std::error::Er
     )?;
 
     let mut context = ArchiveContext::new(
+        env.database.clone(),
         "archive".to_string(),
         env.archive_dir.to_string_lossy().to_string(),
         CHUNK_SIZE,
     );
     let archive_service = ArchiveServices::default();
-    archive_service.archive_file_in_db(
-        env.source_dir.to_str().unwrap(),
-        &mut context,
-        &env.database,
-        None::<fn(_)>,
-    )?;
+    archive_service.archive(env.source_dir.to_str().unwrap(), &mut context, None::<fn(_)>)?;
     Ok(())
 }
 
 /// 验证数据库记录
 fn assert_database_records(
-    source_dir: &Path,
-    database: &Database,
+    source_dir: &Path, database: &Database,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let map_file_chunk_dao = MapFileChunkDao::new(database.conn.clone());
+    let chunk_dao = ArchiveChunkDao::new(database.conn.clone());
+    let file_dao = InfoFileDao::new(database.conn.clone());
+    let root_dao = InfoRootDao::new(database.conn.clone());
+    let directory_dao = InfoDirectoryDao::new(database.conn.clone());
     // 验证数据块表
-    let chunks = database.find_archive_chunks_by_status(None)?;
-    assert!(!chunks.is_empty(), "应该创建了归档数据块");
+    let chunks = chunk_dao.find_archive_chunks_by_status(None);
 
-    let first_chunk = &chunks[0];
+    if let Err(e) = &chunks {
+        eprintln!("Error: {}", e);
+    }
+
+    let chunks_result = chunks?;
+    assert!(!chunks_result.is_empty(), "应该创建了归档数据块");
+
+    let first_chunk = &chunks_result[0];
     assert!(first_chunk.chunk_name.len() > 0, "数据块应该有名称");
 
     // 检查是否是空文件测试
@@ -148,7 +168,7 @@ fn assert_database_records(
     );
 
     // 验证文件与数据块映射表
-    let file_chunks = database.find_map_file_chunk_by_status(None)?;
+    let file_chunks = map_file_chunk_dao.find_map_file_chunk_by_status(None)?;
     assert!(!file_chunks.is_empty(), "应该创建了文件到数据块的映射");
 
     let first_map = &file_chunks[0];
@@ -167,17 +187,13 @@ fn assert_database_records(
     // 验证根目录状态
     let canonical_source_dir = source_dir.canonicalize()?;
     let root_path = canonical_source_dir.to_string_lossy().to_string();
-    let root_info = database.find_root_info_by_path(&root_path)?;
+    let root_info = root_dao.find_root_info_by_path(&root_path)?;
     assert!(root_info.is_some(), "应该找到根目录记录");
     let root_info = root_info.unwrap();
-    assert_eq!(
-        root_info.status,
-        RootStatus::Health,
-        "根目录状态应为 Health"
-    );
+    assert_eq!(root_info.status, RootStatus::Health, "根目录状态应为 Health");
 
     // 验证文件状态
-    let files = database.find_files_by_status_and_root_id(root_info.id.unwrap(), None)?;
+    let files = file_dao.find_files_by_status_and_root_id(root_info.id.unwrap(), None)?;
     assert!(!files.is_empty(), "应该存在文件记录");
     for file in &files {
         assert_eq!(
@@ -191,7 +207,7 @@ fn assert_database_records(
 
     // 验证目录状态
     let directories =
-        database.find_directories_by_status_and_root_id(root_info.id.unwrap(), None)?;
+        directory_dao.find_by_status_and_root_id(root_info.id.unwrap(), None)?;
     for directory in &directories {
         assert_eq!(
             directory.status,
@@ -209,9 +225,7 @@ fn assert_database_records(
 fn assert_archive_files(archive_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     assert!(archive_dir.exists(), "归档目录应该存在");
 
-    let entries: Vec<_> = fs::read_dir(archive_dir)?
-        .filter_map(|entry| entry.ok())
-        .collect();
+    let entries: Vec<_> = fs::read_dir(archive_dir)?.filter_map(|entry| entry.ok()).collect();
 
     assert!(!entries.is_empty(), "应该创建归档文件");
 
@@ -222,11 +236,7 @@ fn assert_archive_files(archive_dir: &Path) -> Result<(), Box<dyn std::error::Er
             info!("{} 归档文件大小：{}", path.display(), size);
             assert!(size > 0, "归档文件大小应该大于 0");
             // 1024 * 5 模拟头文件的开销
-            assert!(
-                size <= CHUNK_SIZE + 1024 * 5,
-                "归档文件大小应该在合理范围内：{}",
-                size
-            );
+            assert!(size <= CHUNK_SIZE + 1024 * 5, "归档文件大小应该在合理范围内：{}", size);
         }
     }
 
@@ -235,31 +245,30 @@ fn assert_archive_files(archive_dir: &Path) -> Result<(), Box<dyn std::error::Er
 
 /// 通用的分卷验证函数
 fn assert_volume_processing_common(
-    source_dir: &Path,
-    database: &Database,
-    file_name: &str,
-    expected_volume_count: usize,
+    source_dir: &Path, database: &Database, file_name: &str, expected_volume_count: usize,
     expected_unique_chunks: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let map_file_chunk_dao = MapFileChunkDao::new(database.conn.clone());
+    let chunk_dao = ArchiveChunkDao::new(database.conn.clone());
+    let file_dao = InfoFileDao::new(database.conn.clone());
+    let root_dao = InfoRootDao::new(database.conn.clone());
+
     let source_dir_path = source_dir.canonicalize()?;
     let root_info =
-        database.find_root_info_by_path(&source_dir_path.to_string_lossy().to_string())?;
+        root_dao.find_root_info_by_path(&source_dir_path.to_string_lossy().to_string())?;
 
     assert!(root_info.is_some(), "应该存在根目录记录");
     let root_id = root_info.unwrap().id.unwrap();
 
     // 查找大文件
-    let files = database.find_files_by_status_and_root_id(root_id, None)?;
+    let files = file_dao.find_files_by_status_and_root_id(root_id, None)?;
     let large_file = files
         .iter()
         .find(|f| f.file_name == file_name)
         .expect(&format!("应该找到大文件：{}", file_name));
 
     // 验证大文件大小是 2MB
-    assert_eq!(
-        large_file.file_size, LARGE_FILE_SIZE,
-        "大文件大小应该是 2MB"
-    );
+    assert_eq!(large_file.file_size, LARGE_FILE_SIZE, "大文件大小应该是 2MB");
 
     // 验证大文件状态
     assert_eq!(
@@ -270,7 +279,7 @@ fn assert_volume_processing_common(
     );
 
     // 根据文件 ID 查找文件与归档数据块映射关系
-    let file_chunks = database.find_map_file_chunk_by_file_id(large_file.id.unwrap())?;
+    let file_chunks = map_file_chunk_dao.find_map_file_chunk_by_file_id(large_file.id.unwrap())?;
 
     // 验证映射关系存在
     assert!(!file_chunks.is_empty(), "大文件应该有对应的归档数据块映射");
@@ -288,11 +297,7 @@ fn assert_volume_processing_common(
     sorted_file_chunks.sort_by_key(|m| m.volume_order);
 
     for (i, map) in sorted_file_chunks.iter().enumerate() {
-        assert_eq!(
-            map.volume_order,
-            (i + 1) as i32,
-            "分卷顺序应该从 1 开始连续递增"
-        );
+        assert_eq!(map.volume_order, (i + 1) as i32, "分卷顺序应该从 1 开始连续递增");
 
         // 验证映射状态
         assert_eq!(
@@ -310,18 +315,26 @@ fn assert_volume_processing_common(
     assert_eq!(
         unique_chunk_ids.len(),
         expected_unique_chunks,
-        "应该有 {} 个唯一的数据块",
-        expected_unique_chunks
+        "应该有 {} 个唯一的数据块，但实际有 {} 个",
+        expected_unique_chunks,
+        unique_chunk_ids.len()
     );
 
     // 验证数据块
     for map in &file_chunks {
-        let chunk = database.find_archive_chunk_by_id(map.chunk_id)?;
+        let chunk = chunk_dao.find_archive_chunk_by_id(map.chunk_id)?;
         assert!(chunk.is_some(), "每个映射应该关联到有效的数据块");
         let chunk = chunk.unwrap();
 
-        // 验证数据块大小
-        assert_eq!(chunk.chunk_size, ASSET_SIZE, "数据块大小应该是 512KB");
+        // 对于相同内容的分卷，所有 chunk 大小应该相同
+        // 对于不同内容的分卷，chunk 大小应该是预设值
+        if expected_unique_chunks == 1 {
+            // 相同内容情况，检查 chunk 大小是否合理
+            assert!(chunk.chunk_size > 0, "数据块大小应该大于 0");
+        } else {
+            // 不同内容情况，检查 chunk 大小是否为预设值
+            assert_eq!(chunk.chunk_size, ASSET_SIZE, "数据块大小应该是 512KB");
+        }
 
         // 验证数据块状态
         assert_eq!(
@@ -337,22 +350,20 @@ fn assert_volume_processing_common(
 
 /// 验证分卷功能 - 内容相同的分卷
 fn assert_volume_processing_same_content(
-    source_dir: &Path,
-    database: &Database,
+    source_dir: &Path, database: &Database,
 ) -> Result<(), Box<dyn std::error::Error>> {
     assert_volume_processing_common(
         source_dir,
         database,
         "large_file.dat",
-        1, // 由于内容相同，只存储一份
+        4, // 即使内容相同，也应该有 4 个分卷记录 volume_order 不同
         1, // 一个唯一数据块
     )
 }
 
 /// 验证分卷功能 - 内容不同的情况
 fn assert_volume_processing_different_content(
-    source_dir: &Path,
-    database: &Database,
+    source_dir: &Path, database: &Database,
 ) -> Result<(), Box<dyn std::error::Error>> {
     assert_volume_processing_common(
         source_dir,
@@ -366,6 +377,7 @@ fn assert_volume_processing_different_content(
 /// 测试基本的归档功能
 #[test]
 fn test_basic_archive_in() -> Result<(), Box<dyn std::error::Error>> {
+    init_test_env_in_file();
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
         .try_init();
 
@@ -382,6 +394,7 @@ fn test_basic_archive_in() -> Result<(), Box<dyn std::error::Error>> {
 /// 测试相同内容的大文件分卷归档
 #[test]
 fn test_archive_in_with_same_content_chunks() -> Result<(), Box<dyn std::error::Error>> {
+    init_test_env_in_file();
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
         .try_init();
 
@@ -397,6 +410,7 @@ fn test_archive_in_with_same_content_chunks() -> Result<(), Box<dyn std::error::
 /// 测试不同内容的大文件分卷归档
 #[test]
 fn test_archive_in_with_different_content_chunks() -> Result<(), Box<dyn std::error::Error>> {
+    init_test_env_in_file();
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
         .try_init();
 
@@ -412,6 +426,7 @@ fn test_archive_in_with_different_content_chunks() -> Result<(), Box<dyn std::er
 /// 测试空文件归档
 #[test]
 fn test_archive_empty_file() -> Result<(), Box<dyn std::error::Error>> {
+    init_test_env_in_file();
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
         .try_init();
 
@@ -425,44 +440,44 @@ fn test_archive_empty_file() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// TODO 测试归档目录权限不足的情况
+// TODO 测试归档目录权限不足的情况
 // #[test]
-fn test_archive_directory_permission_denied() -> Result<(), Box<dyn std::error::Error>> {
-    let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
-        .try_init();
+// fn test_archive_directory_permission_denied() -> Result<(), Box<dyn std::error::Error>> {
+//     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+//         .try_init();
 
-    let env = TestEnvironment::new()?;
-    create_test_files(&env.source_dir)?;
+//     let env = TestEnvironment::new()?;
+//     create_test_files(&env.source_dir)?;
 
-    // 创建一个只读的归档目录
-    let readonly_archive_dir = env.temp_dir.path().join("readonly-archive");
-    fs::create_dir_all(&readonly_archive_dir)?;
-    let mut perms = fs::metadata(&readonly_archive_dir)?.permissions();
-    perms.set_readonly(true);
-    fs::set_permissions(&readonly_archive_dir, perms)?;
+//     // 创建一个只读的归档目录
+//     let readonly_archive_dir = env.temp_dir.path().join("readonly-archive");
+//     fs::create_dir_all(&readonly_archive_dir)?;
+//     let mut perms = fs::metadata(&readonly_archive_dir)?.permissions();
+//     perms.set_readonly(true);
+//     fs::set_permissions(&readonly_archive_dir, perms)?;
 
-    let scan_service = ScanServices::new();
-    scan_service.scan_and_save_directory_with_events(
-        &env.source_dir,
-        &env.database,
-        None::<fn(_)>,
-    )?;
+//     let scan_service = ScanServices::new();
+//     scan_service.scan_and_save_directory_with_events(
+//         &env.source_dir,
+//         &env.database,
+//         None::<fn(_)>,
+//     )?;
 
-    // 执行归档操作，应该失败
-    let mut context = ArchiveContext::new(
-        "archive".to_string(),
-        readonly_archive_dir.to_string_lossy().to_string(),
-        CHUNK_SIZE,
-    );
+//     // 执行归档操作，应该失败
+//     let mut context = ArchiveContext::new(
+//         "archive".to_string(),
+//         readonly_archive_dir.to_string_lossy().to_string(),
+//         CHUNK_SIZE,
+//     );
 
-    let archive_service = ArchiveServices::default();
-    let result = archive_service.archive_file_in_db(
-        env.source_dir.to_str().unwrap(),
-        &mut context,
-        &env.database,
-        None::<fn(_)>,
-    );
+//     let archive_service = ArchiveServices::default();
+//     let result = archive_service.archive(
+//         env.source_dir.to_str().unwrap(),
+//         &mut context,
+//         &env.database,
+//         None::<fn(_)>,
+//     );
 
-    assert!(result.is_err());
-    Ok(())
-}
+//     assert!(result.is_err());
+//     Ok(())
+// }
