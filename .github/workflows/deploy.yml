@@ -46,7 +46,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y graphviz
       - name: Install Chrome for Puppeteer
         run: |
-          npx puppeteer browsers install chrome-headless-shell
+          npx puppeteer browsers install chrome
           export PUPPETEER_CACHE_DIR=/home/runner/.cache/puppeteer
           echo "PUPPETEER_CACHE_DIR=/home/runner/.cache/puppeteer" >> $GITHUB_ENV
       - name: Install dependencies

@@ -13,9 +13,9 @@ export default function diagramGenerator(md: MarkdownIt) {
       const content = token.content
       const outDir = path.resolve(process.cwd(), 'public/diagrams')
       fs.mkdirSync(outDir, { recursive: true })
-      // 清理旧的缓存文件（可选，如果需要完全重新生成）
-      // fs.rmSync(outDir, { recursive: true, force: true })
-      // fs.mkdirSync(outDir, { recursive: true })
+      // 清理旧的缓存文件，确保使用最新参数重新生成
+      fs.rmSync(outDir, { recursive: true, force: true })
+      fs.mkdirSync(outDir, { recursive: true })
       const contentHash = crypto.createHash('md5').update(content).digest('hex')
       const fileBase = `${path.basename(env.filePath || 'unknown', '.md')}-${lang}-${contentHash}`
       const outPath = path.join(outDir, `${fileBase}.svg`)
