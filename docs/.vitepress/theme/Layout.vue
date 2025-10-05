@@ -14,47 +14,51 @@ const isHome = computed(() => {
 
 const showFooter = ref(true)
 
-// 当 frontmatter 改变时自动更新
-showFooter.value = isHome.value
+// 在所有页面显示版权信息
+showFooter.value = true
 </script>
 
 <template>
     <Layout>
         <template #layout-bottom>
-            <div v-if="showFooter" class="fixed-footer">
+            <div v-if="showFooter" class="footer">
                 <p>基于 Apache 2.0 协议发布</p>
-                <p>版权所有 &copy; {{ new Date().getFullYear() }} 郑一弘</p>
+                <p>版权所有 &copy; {{ new Date().getFullYear() }} 郑一弘 (cc01cc)</p>
             </div>
         </template>
     </Layout>
 </template>
 
 <style>
-.fixed-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
+/* 覆盖默认的 layout-bottom 固定定位 */
+.VPLayout [data-vp-layout-bottom] {
+    position: static !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    z-index: auto !important;
+    background-color: transparent !important;
+    border-top: none !important;
+}
+
+.footer {
     width: 100%;
     text-align: center;
     padding: 1rem 0;
     border-top: 1px solid var(--vp-c-divider);
     background-color: var(--vp-c-bg);
-    z-index: 100;
     font-size: 1rem;
     color: var(--vp-c-text-2);
     font-family: var(--vp-font-family-base);
     line-height: 1.6;
+    margin-top: 2rem;
 }
 
-.fixed-footer p {
+.footer p {
     margin: 0.2rem 0;
     font-size: 0.9em;
     color: var(--vp-c-text-2);
     font-family: var(--vp-font-family-base);
-}
-
-.VPHome {
-    padding-bottom: 70px;
 }
 
 .VPDoc.has-aside .content-container {
