@@ -1,4 +1,6 @@
 //! 数据库表结构定义
+use chrono::Utc;
+use one_archive_macros::FromSqliteRow;
 use serde::{Deserialize, Serialize};
 
 use super::constants::{
@@ -8,7 +10,7 @@ use rusqlite::{Result as SqliteResult, Row};
 use std::convert::TryFrom;
 
 /// 根目录信息表
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromSqliteRow)]
 pub struct InfoRoot {
     /// 目录唯一标识
     pub id: Option<i64>,
@@ -17,6 +19,7 @@ pub struct InfoRoot {
     /// 根目录路径
     pub root_path: String,
     /// 状态：HEALTH/RECYCLED
+    #[sqlite(from_str)]
     pub status: RootStatus,
     /// 创建时间戳
     pub created_at: Option<i64>,
@@ -27,30 +30,10 @@ pub struct InfoRoot {
 impl InfoRoot {
     /// 创建一个新的 InfoRoot 实例
     pub fn new(root_path: String, root_name: String, status: RootStatus) -> Self {
-        Self {
-            id: None,
-            root_name,
-            root_path,
-            status,
-            created_at: None,
-            updated_at: None,
-        }
+        Self { id: None, root_name, root_path, status, created_at: None, updated_at: None }
     }
 }
 
-impl TryFrom<&Row<'_>> for InfoRoot {
-    type Error = rusqlite::Error;
-    fn try_from(row: &Row) -> SqliteResult<Self> {
-        Ok(InfoRoot {
-            id: row.get("id")?,
-            root_name: row.get("root_name")?,
-            root_path: row.get("root_path")?,
-            status: RootStatus::from_str(&row.get::<_, String>("status")?),
-            created_at: row.get("created_at")?,
-            updated_at: row.get("updated_at")?,
-        })
-    }
-}
 
 /// 目录索引表
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,10 +59,7 @@ pub struct InfoDirectory {
 impl InfoDirectory {
     /// 创建一个新的 InfoDirectory 实例
     pub fn new(
-        root_id: i64,
-        directory_name: String,
-        directory_mtime: i64,
-        directory_path: Option<String>,
+        root_id: i64, directory_name: String, directory_mtime: i64, directory_path: Option<String>,
         status: DirectoryStatus,
     ) -> Self {
         Self {
@@ -135,12 +115,8 @@ pub struct InfoFile {
 impl InfoFile {
     /// 创建一个新的 InfoFile 实例
     pub fn new(
-        directory_id: i64,
-        file_name: String,
-        file_size: i64,
-        file_mtime: i64,
-        file_hash: Option<String>,
-        status: FileStatus,
+        directory_id: i64, file_name: String, file_size: i64, file_mtime: i64,
+        file_hash: Option<String>, status: FileStatus,
     ) -> Self {
         Self {
             id: None,
@@ -188,8 +164,8 @@ pub struct ArchiveMetadata {
     pub encryption_algorithm: Option<String>,
     /// 状态：HEALTH/RECYCLED
     pub status: ArchiveStatus,
-    pub created_at: Option<i64>,
-    pub updated_at: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 impl TryFrom<&Row<'_>> for ArchiveMetadata {
@@ -216,12 +192,8 @@ impl TryFrom<&Row<'_>> for ArchiveMetadata {
 impl ArchiveMetadata {
     /// 创建一个新的 ArchiveMetadata 实例
     pub fn new(
-        archive_uri: String,
-        archive_name: String,
-        archive_limit_size: i64,
-        is_compressed: i32,
-        is_encrypted: i32,
-        status: ArchiveStatus,
+        archive_uri: String, archive_name: String, archive_limit_size: i64, is_compressed: i32,
+        is_encrypted: i32, status: ArchiveStatus,
     ) -> Self {
         Self {
             id: None,
@@ -235,8 +207,8 @@ impl ArchiveMetadata {
             is_encrypted,
             encryption_algorithm: None,
             status,
-            created_at: None,
-            updated_at: None,
+            created_at: Utc::now().timestamp(),
+            updated_at: Utc::now().timestamp(),
         }
     }
 }
@@ -260,13 +232,8 @@ pub struct ArchiveChunk {
 impl ArchiveChunk {
     /// 创建一个新的 ArchiveChunk 实例
     pub fn new(
-        archive_id: i64,
-        chunk_name: String,
-        chunk_size: i64,
-        chunk_hash: String,
-        chunk_mtime: i64,
-        chunk_relative_path: String,
-        status: ChunkStatus,
+        archive_id: i64, chunk_name: String, chunk_size: i64, chunk_hash: String, chunk_mtime: i64,
+        chunk_relative_path: String, status: ChunkStatus,
     ) -> Self {
         Self {
             id: None,

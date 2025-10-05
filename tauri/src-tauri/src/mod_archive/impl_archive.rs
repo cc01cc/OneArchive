@@ -8,14 +8,14 @@ use crate::mod_database::constants::DatabaseTableName;
 use crate::mod_database::constants::DirectoryStatus;
 use crate::mod_database::constants::RootStatus;
 use crate::mod_database::constants::{ArchiveStatus, ChunkStatus, FileStatus, MapFileChunkStatus};
-use crate::mod_database::dao::archive_chunk::ArchiveChunkDao;
-use crate::mod_database::dao::archive_metadata::ArchiveMetadataDao;
-use crate::mod_database::dao::info_directory::InfoDirectoryDao;
-use crate::mod_database::dao::info_file::InfoFileDao;
-use crate::mod_database::dao::info_root::InfoRootDao;
-use crate::mod_database::dao::map_file_chunk::MapFileChunkDao;
-use crate::mod_database::dao::view_file::ViewFileDao;
-use crate::mod_database::database::Database;
+use crate::mod_database::dao_database::dao_archive_chunk::ArchiveChunkDao;
+use crate::mod_database::dao_database::dao_archive_metadata::ArchiveMetadataDao;
+use crate::mod_database::dao_database::dao_info_directory::InfoDirectoryDao;
+use crate::mod_database::dao_database::dao_info_file::InfoFileDao;
+use crate::mod_database::dao_database::dao_info_root::InfoRootDao;
+use crate::mod_database::dao_database::dao_map_file_chunk::MapFileChunkDao;
+use crate::mod_database::dao_database::dao_view_file::ViewFileDao;
+use crate::mod_database::impl_database::Database;
 use crate::mod_database::schema::{
     ArchiveChunk, CreateArchiveMetadataParams, MapFileChunk, ViewFile,
 };
@@ -386,7 +386,7 @@ impl FileProcessingStrategy {
         let mut file_remaining_size = view_file.file_size;
 
         // 用于跟踪文件内部进度
-        let mut file_processed_size: i64 = 0;
+        let _file_processed_size: i64 = 0;
 
         // 在处理文件的循环中，应该处理文件大小为 0 的情况
         while file_remaining_size > 0 {

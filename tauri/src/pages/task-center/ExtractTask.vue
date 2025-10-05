@@ -8,10 +8,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useGlobalStore } from "../../store/global";
+import { getAllRoots, extractArchive } from "../../api";
 import Card from "primevue/card";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
@@ -109,21 +109,22 @@ const loadRootList = async () => {
     }
 
     try {
-        const roots: Array<{ id: number; root_path: string; root_name: string }> = await invoke("get_all_roots", {
-            dbPath: extractConfig.value.dbPath,
-        });
+        const result = await getAllRoots(extractConfig.value.dbPath);
+        if (result.success && result.data) {
+            rootList.value = result.data.map(root => ({
+                id: root.id,
+                path: root.rootPath,
+                name: root.rootName || `根目录 ${root.id}`,
+            }));
 
-        rootList.value = roots.map(root => ({
-            id: root.id,
-            path: root.root_path,
-            name: root.root_name || `根目录 ${root.id}`,
-        }));
-
-        // 如果之前已选择根目录，但不在新的列表中，则重置选择
-        if (extractConfig.value.rootId &&
-            !rootList.value.some(root => root.id === extractConfig.value.rootId)) {
-            extractConfig.value.rootId = null;
-            selectedRoot.value = null;
+            // 如果之前已选择根目录，但不在新的列表中，则重置选择
+            if (extractConfig.value.rootId &&
+                !rootList.value.some(root => root.id === extractConfig.value.rootId)) {
+                extractConfig.value.rootId = null;
+                selectedRoot.value = null;
+            }
+        } else {
+            throw new Error(result.error || '获取根目录失败');
         }
     } catch (error: any) {
         console.error("加载根目录失败：", error);
@@ -202,22 +203,26 @@ const startExtract = async () => {
     });
 
     try {
-        // 调用 Rust 命令执行解档
-        const result = await invoke("extract_archive", {
-            rootId: extractConfig.value.rootId,
-            targetPath: extractConfig.value.targetPath,
-            dbPath: extractConfig.value.dbPath,
-        });
+        // 调用新的API执行解档
+        const result = await extractArchive(
+            extractConfig.value.rootId!,
+            extractConfig.value.targetPath,
+            extractConfig.value.dbPath
+        );
 
-        extractResult.value = result;
-        statusMessage.value = "解档完成";
+        if (result.success && result.data) {
+            extractResult.value = result.data;
+            statusMessage.value = "解档完成";
 
-        toast.add({
-            severity: "success",
-            summary: "解档完成",
-            detail: "文件解档成功",
-            life: 3000,
-        });
+            toast.add({
+                severity: "success",
+                summary: "解档完成",
+                detail: "文件解档成功",
+                life: 3000,
+            });
+        } else {
+            throw new Error(result.error || '解档失败');
+        }
     } catch (error: any) {
         statusMessage.value = `解档失败：${error.message || error}`;
         console.error("Extract error:", error);

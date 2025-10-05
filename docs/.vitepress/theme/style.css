@@ -1,0 +1,35 @@
+/* docs/.vitepress/theme/style.css */
+.VPDoc table {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid var(--vp-c-divider);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.VPDoc table th,
+.VPDoc table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--vp-c-divider);
+    border-right: 1px solid var(--vp-c-divider);
+}
+
+.VPDoc table th {
+    background-color: var(--vp-c-bg-soft);
+    font-weight: 600;
+    text-align: left;
+}
+
+.VPDoc table tr:last-child td {
+    border-bottom: none;
+}
+
+.VPDoc table td:last-child,
+.VPDoc table th:last-child {
+    border-right: none;
+}
+
+/* 悬停效果 */
+.VPDoc table tbody tr:hover {
+    background-color: var(--vp-c-bg-soft);
+}

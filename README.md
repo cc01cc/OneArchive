@@ -28,7 +28,6 @@ pnpm run tauri dev
 
 ![tauri-design](./assets/tauri-design.png)
 
-
 ```plantuml
 @startuml 归档流程活动图
 start

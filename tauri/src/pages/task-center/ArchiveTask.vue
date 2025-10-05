@@ -17,10 +17,10 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { open } from '@tauri-apps/plugin-dialog';
-import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useGlobalStore } from '../../store/global';
 import { useToast } from 'primevue/usetoast';
+import { archiveFiles } from '../../api';
 import Card from "primevue/card";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
@@ -187,8 +187,8 @@ const startArchive = async () => {
     });
 
     try {
-        // 调用 Tauri 后端的归档功能
-        const result = await invoke('archive_files', {
+        // 调用新的API执行归档
+        const result = await archiveFiles({
             rootDir: archiveConfig.rootDir,
             archiveDir: archiveConfig.archiveDir,
             archivePrefix: archiveConfig.archivePrefix,
@@ -196,9 +196,13 @@ const startArchive = async () => {
             archiveLimitSize: archiveConfig.archiveLimitSize
         });
 
-        statusMessage.value = "归档完成";
-        progress.value = 100;
-        archiveResult.value = JSON.stringify(result, null, 2);
+        if (result.success) {
+            statusMessage.value = "归档完成";
+            progress.value = 100;
+            archiveResult.value = JSON.stringify(result.data, null, 2);
+        } else {
+            throw new Error(result.error || '归档失败');
+        }
     } catch (error: any) {
         statusMessage.value = `归档失败：${error.message || error}`;
         console.error("Archive error:", error);

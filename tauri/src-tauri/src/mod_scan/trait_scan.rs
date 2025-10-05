@@ -1,11 +1,7 @@
 //! 归档操作 trait 定义
 //! 定义各种归档操作的接口
 
-use crate::mod_database::database::Database;
-use crate::mod_database::trait_database::DirectoryOperations;
-use crate::mod_database::trait_database::FileOperations;
-use crate::mod_database::trait_database::RootOperations;
-use crate::mod_database::trait_database::StatusOperations;
+use crate::mod_database::impl_database::Database;
 use crate::mod_scan::model_scan::DirectoryStatistics;
 use crate::mod_scan::model_scan::ScanProgress;
 use anyhow::Result as AnyResult;

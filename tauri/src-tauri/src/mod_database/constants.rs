@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use rusqlite::ToSql;
 use rusqlite::types::{FromSql, FromSqlResult, ToSqlOutput, ValueRef};
 use serde::{Deserialize, Serialize};
@@ -14,6 +16,8 @@ pub enum DatabaseTableName {
     ViewFile,
     ViewChunk,
 }
+
+pub const STATUS_HEALTH: &str = "Health";
 
 impl DatabaseTableName {
     /// 获取表名字符串
@@ -90,7 +94,12 @@ impl RootStatus {
         }
     }
 }
-
+impl FromStr for RootStatus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(RootStatus::from_str(s))
+    }
+}
 impl FromSql for RootStatus {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         let s: String = FromSql::column_result(value)?;
@@ -248,8 +257,6 @@ impl ToSql for ArchiveStatus {
     }
 }
 
-
-
 /// 数据块状态枚举
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -318,6 +325,196 @@ impl FromSql for MapFileChunkStatus {
     }
 }
 impl ToSql for MapFileChunkStatus {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+/// 灾备组状态枚举
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RecoveryGroupStatus {
+    Health,
+    Recycled,
+}
+
+impl RecoveryGroupStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RecoveryGroupStatus::Health => "Health",
+            RecoveryGroupStatus::Recycled => "Recycled",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Health" => RecoveryGroupStatus::Health,
+            "Recycled" => RecoveryGroupStatus::Recycled,
+            _ => RecoveryGroupStatus::Health, // 默认值
+        }
+    }
+}
+
+impl FromSql for RecoveryGroupStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let s: String = FromSql::column_result(value)?;
+        Ok(RecoveryGroupStatus::from_str(&s))
+    }
+}
+
+impl ToSql for RecoveryGroupStatus {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+/// 数据分片状态枚举
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RecoveryDataShardStatus {
+    Health,
+    Recycled,
+}
+
+impl RecoveryDataShardStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RecoveryDataShardStatus::Health => "Health",
+            RecoveryDataShardStatus::Recycled => "Recycled",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Health" => RecoveryDataShardStatus::Health,
+            "Recycled" => RecoveryDataShardStatus::Recycled,
+            _ => RecoveryDataShardStatus::Health, // 默认值
+        }
+    }
+}
+
+impl FromSql for RecoveryDataShardStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let s: String = FromSql::column_result(value)?;
+        Ok(RecoveryDataShardStatus::from_str(&s))
+    }
+}
+
+impl ToSql for RecoveryDataShardStatus {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+/// 校验分片状态枚举
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RecoveryParityShardStatus {
+    Health,
+    Recycled,
+}
+
+impl RecoveryParityShardStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RecoveryParityShardStatus::Health => "Health",
+            RecoveryParityShardStatus::Recycled => "Recycled",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Health" => RecoveryParityShardStatus::Health,
+            "Recycled" => RecoveryParityShardStatus::Recycled,
+            _ => RecoveryParityShardStatus::Health, // 默认值
+        }
+    }
+}
+
+impl FromSql for RecoveryParityShardStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let s: String = FromSql::column_result(value)?;
+        Ok(RecoveryParityShardStatus::from_str(&s))
+    }
+}
+
+impl ToSql for RecoveryParityShardStatus {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+/// 灾备组归档文件映射状态枚举
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RecoveryGroupArchiveStatus {
+    Health,
+    Recycled,
+}
+
+impl RecoveryGroupArchiveStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RecoveryGroupArchiveStatus::Health => "Health",
+            RecoveryGroupArchiveStatus::Recycled => "Recycled",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Health" => RecoveryGroupArchiveStatus::Health,
+            "Recycled" => RecoveryGroupArchiveStatus::Recycled,
+            _ => RecoveryGroupArchiveStatus::Health, // 默认值
+        }
+    }
+}
+
+impl FromSql for RecoveryGroupArchiveStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let s: String = FromSql::column_result(value)?;
+        Ok(RecoveryGroupArchiveStatus::from_str(&s))
+    }
+}
+
+impl ToSql for RecoveryGroupArchiveStatus {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+/// 归档文件与数据分片映射状态枚举
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum MapArchiveDataShardStatus {
+    Health,
+    Recycled,
+}
+
+impl MapArchiveDataShardStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MapArchiveDataShardStatus::Health => "Health",
+            MapArchiveDataShardStatus::Recycled => "Recycled",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Health" => MapArchiveDataShardStatus::Health,
+            "Recycled" => MapArchiveDataShardStatus::Recycled,
+            _ => MapArchiveDataShardStatus::Health, // 默认值
+        }
+    }
+}
+
+impl FromSql for MapArchiveDataShardStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let s: String = FromSql::column_result(value)?;
+        Ok(MapArchiveDataShardStatus::from_str(&s))
+    }
+}
+
+impl ToSql for MapArchiveDataShardStatus {
     fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
         Ok(ToSqlOutput::from(self.as_str()))
     }

@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tempfile::TempDir;
 
-use one_archive_lib::mod_database::database::Database;
+use one_archive_lib::mod_database::impl_database::Database;
 use one_archive_lib::mod_database::trait_database::InitializationOperations;
 
 /// 通用测试环境结构体
@@ -51,6 +51,17 @@ impl TestEnvironment {
 pub fn init_logger() {
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
         .try_init();
+}
+
+/// 初始化测试环境日志
+pub fn init_test_env_in_file() {
+    static INIT: std::sync::Once = std::sync::Once::new();
+    INIT.call_once(|| {
+        let _ = color_eyre::install();
+        let _ =
+            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+                .try_init();
+    });
 }
 
 /// 创建测试文件

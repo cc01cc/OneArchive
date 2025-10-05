@@ -6,8 +6,8 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold">工作区列表</h2>
                     <div class="flex gap-1">
-                        <Button icon="pi pi-plus" rounded text @click="addWorkspace" />
-                        <Button icon="pi pi-file-import" rounded text @click="importWorkspace" />
+                        <Button icon="pi pi-plus" rounded text @click="addWorkspace" v-tooltip.top="'新增工作区'" />
+                        <Button icon="pi pi-file-import" rounded text @click="importWorkspace" v-tooltip.top="'导入工作区'" />
                     </div>
                 </div>
                 <div class="relative">
@@ -144,16 +144,6 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import { useGlobalStore } from '../store/global';
 import { useConfirm } from 'primevue/useconfirm';
 
-// 定义应用设置接口
-interface AppSettings {
-    last_workspace: string | null;
-    last_root: number | null;
-    last_db_path: string | null;
-    window_width: number | null;
-    window_height: number | null;
-    window_x: number | null;
-    window_y: number | null;
-}
 
 // 定义工作区配置接口
 interface WorkspaceConfig {
@@ -209,10 +199,10 @@ const activateWorkspace = async (workspace: WorkspaceDetail) => {
                     last_workspace: workspace.path,
                     last_root: null, // 根目录将在使用时设置
                     last_db_path: workspace.dbPath,
-                    window_width: null,
-                    window_height: null,
-                    window_x: null,
-                    window_y: null
+                    window_width: 1000,
+                    window_height: 680,
+                    window_x: 100,
+                    window_y: 100
                 }
             });
 
@@ -446,9 +436,9 @@ const selectDbPath = async () => {
 // 获取工作区列表
 const loadWorkspaces = async () => {
     try {
-        // 调用后端 API 获取工作区列表
-        const result = await invoke<{ name: string, path: string }[]>('get_config_workspace')
-        basicWorkspaces.value = result.map((w: { name: string, path: string }, index: number) => ({
+        // 调用后端 API 获取应用配置
+        const appConfig = await invoke<{ workspace: { name: string, path: string }[], last_settings: any }>('load_app_config_command')
+        basicWorkspaces.value = appConfig.workspace.map((w: { name: string, path: string }, index: number) => ({
             key: `${index}`,
             ...w
         }));

@@ -12,6 +12,7 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { definePreset } from '@primeuix/themes';
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
+import Tooltip from 'primevue/tooltip';
 
 const app = createApp(App)
 
@@ -47,6 +48,7 @@ pinia.use(piniaPluginPersistedstate)
 
 app.use(ToastService);
 app.use(ConfirmationService);
+app.directive('tooltip', Tooltip);
 app.use(router)
 app.use(pinia)
 

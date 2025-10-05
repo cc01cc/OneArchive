@@ -3,9 +3,7 @@
 //! 包含归档过程中使用的通用工具函数
 
 use anyhow::Result as AnyResult;
-use anyhow::anyhow;
 use chrono::Utc;
-use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};

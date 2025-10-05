@@ -14,11 +14,26 @@ pub fn calculate_sha256(data: &[u8]) -> String {
 
 /// 计算文件哈希值
 pub fn calculate_file_hash(file_path: &Path) -> AnyResult<String> {
+    if !Path::new(file_path).exists() {
+        log::error!("文件不存在：{}", file_path.to_string_lossy());
+        return Err(anyhow::anyhow!("文件不存在：{}", file_path.to_string_lossy()));
+    }
     let mut file = File::open(file_path)?;
     let mut hasher = Sha256::new();
     std::io::copy(&mut file, &mut hasher)?;
     let hash = hasher.finalize();
     Ok(format!("{:x}", hash))
+}
+
+pub fn verify_file_sha256(file_path: &Path, expected_hash: &str) -> AnyResult<bool> {
+    let actual_hash = calculate_file_hash(file_path)?;
+    log::debug!(
+        "verify_file_hash: file_path: {}, expected_hash: {}, actual_hash: {}",
+        file_path.to_string_lossy(),
+        expected_hash,
+        actual_hash
+    );
+    if actual_hash != expected_hash { Ok(false) } else { Ok(true) }
 }
 
 /// 通用事件类型枚举
@@ -67,38 +82,24 @@ where
 
 /// 创建进度事件的辅助函数
 pub fn create_progress_event<T>(
-    event_type: EventType,
-    module: &str,
-    data: T,
-    message: Option<String>,
-) -> ProgressEvent<T> 
-where 
+    event_type: EventType, module: &str, data: T, message: Option<String>,
+) -> ProgressEvent<T>
+where
     T: Clone,
 {
     use std::time::{SystemTime, UNIX_EPOCH};
-    
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as u64;
-    
-    ProgressEvent {
-        event_type,
-        module: module.to_string(),
-        data,
-        timestamp,
-        message,
-    }
+
+    let timestamp =
+        SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64;
+
+    ProgressEvent { event_type, module: module.to_string(), data, timestamp, message }
 }
 
 /// 通用进度更新函数
-pub fn update_progress<F, T>(
-    progress_callback: &Option<F>,
-    event: &ProgressEvent<T>,
-) where
+pub fn update_progress<F, T>(progress_callback: &Option<F>, event: &ProgressEvent<T>)
+where
     Option<F>: ProgressCallback<T>,
     T: Clone,
 {
     progress_callback.call(event);
 }
-

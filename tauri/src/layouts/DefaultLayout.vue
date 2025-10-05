@@ -4,92 +4,46 @@ import { useRouter, useRoute } from 'vue-router'
 import type { MenuItem } from 'primevue/menuitem'
 import debounce from 'lodash-es/debounce';
 import Menubar from 'primevue/menubar';
+import ProgressSpinner from 'primevue/progressspinner';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { invoke } from '@tauri-apps/api/core';
 import { onMounted } from 'vue';
-let isSettingOpenned = ref(false);
 import { useGlobalStore } from '../store/global';
+import { useAppConfig } from '../composables/useAppConfig';
+import { useToast } from 'primevue/usetoast';
+
+let isSettingOpened = ref(false);
 const globalStore = useGlobalStore();
+const { isLoading, loadConfig } = useAppConfig();
+const toast = useToast();
 
 const currentWorkspace = computed(() => globalStore.currentWorkspace);
 
-// 定义工作区接口
-interface Workspace {
-    name: string;
-    path: string;
-}
-// 定义应用设置接口
-interface AppSettings {
-    last_workspace: string | null;
-    last_root: number | null;
-    last_db_path: string | null;
-    window_width: number | null;
-    window_height: number | null;
-    window_x: number | null;
-    window_y: number | null;
-}
-
 onMounted(async () => {
-    // 加载应用设置
-    await loadAppSettings();
-
-    // 获取当前工作区
-    await getCurrentWorkspace();
-
-    try {
-        // 调用后端接口获取 workspace 配置
-        const workspaces: Workspace[] = await invoke('get_config_workspace');
-
-        // 如果工作区列表为空，则打开设置窗口
-        if (!workspaces || workspaces.length === 0) {
+    const result = await loadConfig();
+    if (!result.success) {
+        toast.add({
+            severity: 'error',
+            summary: '配置加载失败',
+            detail: '无法加载应用配置，请检查设置',
+            life: 5000
+        });
+        // 延迟打开设置窗口，给用户时间看到 toast
+        setTimeout(() => {
             openSettings();
-        }
-    } catch (error) {
-        console.error('获取 workspace 配置失败：', error);
-        // 如果获取配置失败，也打开设置窗口
+        }, 1000);
+    } else if (result.needsSettings) {
         openSettings();
     }
 });
-// 加载应用设置
-const loadAppSettings = async () => {
-    try {
-        const settings: AppSettings = await invoke('load_app_settings');
 
-        // 如果有上次工作区设置，则设置为当前工作区
-        if (settings.last_workspace) {
-            globalStore.setWorkspace(settings.last_workspace);
-        }
-
-        // 如果有上次数据库路径设置，则设置为当前数据库路径
-        if (settings.last_db_path) {
-            globalStore.setDbPath(settings.last_db_path);
-        }
-    } catch (error) {
-        console.error('加载应用设置失败：', error);
-    }
-};
-
-// 获取当前工作区信息
-const getCurrentWorkspace = async () => {
-    try {
-        const workspaces: Workspace[] = await invoke('get_config_workspace');
-        // 通常第一个工作区是当前使用的工作区
-        if (workspaces && workspaces.length > 0) {
-            // 更新全局工作区变量
-            globalStore.setWorkspace(workspaces[0].path);
-        }
-    } catch (error) {
-        console.error('获取工作区信息失败：', error);
-    }
-};
 const openSettings = async () => {
 
-    if (isSettingOpenned.value) {
+    if (isSettingOpened.value) {
         console.warn('设置窗口已经打开或正在打开中')
         return;
     }
 
-    isSettingOpenned.value = true;
+    isSettingOpened.value = true;
 
     try {
         // 检查窗口是否已存在
@@ -144,7 +98,7 @@ const openSettings = async () => {
             } catch (closeError) {
                 console.error('关闭窗口失败：', closeError);
             } finally {
-                isSettingOpenned.value = false;
+                isSettingOpened.value = false;
             }
         });
 
@@ -163,19 +117,19 @@ const openSettings = async () => {
                     }
                 }).catch(console.error);
             }
-            isSettingOpenned.value = false;
+            isSettingOpened.value = false;
         });
     } catch (error) {
         console.error('打开设置窗口失败：', error);
-        isSettingOpenned.value = false;
+        isSettingOpened.value = false;
     }
 };
 
 // 将 mainWindow 改为一个 Promise，避免在 setup 阶段使用 await
 const mainWindowPromise = WebviewWindow.getByLabel('main');
 // TODO 禁用主窗口后，需要更加清晰的提示用户窗口被禁用，例如添加遮罩层，提示音，以及设置窗口聚焦和闪烁
-watch(isSettingOpenned, async () => {
-    if (isSettingOpenned.value) {
+watch(isSettingOpened, async () => {
+    if (isSettingOpened.value) {
         console.log("设置窗口已打开，禁用主窗口");
         const mainWindow = await mainWindowPromise;
         mainWindow?.setEnabled(false)
@@ -187,6 +141,7 @@ watch(isSettingOpenned, async () => {
         await mainWindow?.show();
     }
 })
+
 
 const debouncedOpenSettings = debounce(openSettings, 300); // 防抖函数，延迟 300ms 执行
 
@@ -247,7 +202,10 @@ const handleItemClick = (item: ExtendedMenuItem) => {
 </script>
 
 <template>
-    <div class="h-screen flex flex-col">
+    <div v-if="isLoading" class="h-screen flex items-center justify-center">
+        <ProgressSpinner />
+    </div>
+    <div v-else class="h-screen flex flex-col">
 
         <header class="flex-shrink-0">
             <!-- // TODO 优化导航栏折叠后，宽屏显示效果 600px-900px -->

@@ -18,7 +18,6 @@ use std::path::Path;
 
 use one_archive_lib::mod_archive::impl_archive::ArchiveServices;
 use one_archive_lib::mod_archive::trait_archive::{ArchiveContext, ArchiveOperations};
-use one_archive_lib::mod_database::database::Database;
 use one_archive_lib::mod_extract::impl_extract::ExtractService;
 use one_archive_lib::mod_extract::model_extract::{ExtractProgress, ExtractTask};
 use one_archive_lib::mod_extract::trait_extract::ExtractOperations;
@@ -36,7 +35,7 @@ fn setup_test_archive_data(env: &TestEnvironment) -> Result<(), Box<dyn std::err
         None::<fn(ScanProgress)>,
     )?;
 
-    let archive_in_service = ArchiveServices::default();
+    let archive_in_service = ArchiveServices;
     let mut context = ArchiveContext::new(
         env.database.clone(),
         "test_archive".to_string(),

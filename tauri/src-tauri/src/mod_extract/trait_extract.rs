@@ -1,6 +1,6 @@
 //! 解档操作 trait 定义
 
-use crate::mod_database::database::Database;
+use crate::mod_database::impl_database::Database;
 use crate::mod_extract::model_extract::{ExtractProgress, ExtractTask};
 use anyhow::Result as AnyResult;
 

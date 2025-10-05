@@ -48,3 +48,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+###  VitePress ###
+# VitePress 构建输出目录
+docs/.vitepress/dist/
+
+# VitePress 本地开发服务器缓存
+docs/.vitepress/cache/
+
+# VitePress 临时文件
+.vitepress/tmp/

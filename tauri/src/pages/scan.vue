@@ -4,7 +4,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import Card from "primevue/card";
@@ -15,6 +14,7 @@ import ProgressBar from "primevue/progressbar";
 import Checkbox from "primevue/checkbox";
 import { useGlobalStore } from "../store/global";
 import { useToast } from 'primevue/usetoast';
+import { scanRoot } from '../api';
 
 const toast = useToast();
 const globalStore = useGlobalStore();
@@ -88,15 +88,19 @@ const startScan = async () => {
   statusMessage.value = "正在初始化...";
 
   try {
-    // 调用 Rust 命令执行扫描（带进度回调）
+    // 调用新的API执行扫描
     statusMessage.value = "正在扫描目录...";
-    await invoke("scan_root_with_progress", {
+    const result = await scanRoot({
       rootPath: scanConfig.value.rootDir,
       dbPath: scanConfig.value.dbPath
     });
 
-    statusMessage.value = "扫描完成";
-    progress.value = 100;
+    if (result.success) {
+      statusMessage.value = "扫描完成";
+      progress.value = 100;
+    } else {
+      throw new Error(result.error || '扫描失败');
+    }
   } catch (error: any) {
     statusMessage.value = `扫描失败：${error}`;
     console.error("Scan error:", error);

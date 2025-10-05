@@ -14,10 +14,10 @@ use tar::Archive as TarArchive;
 use crate::mod_database::constants::ChunkStatus;
 use crate::mod_database::constants::DirectoryStatus;
 use crate::mod_database::constants::FileStatus;
-use crate::mod_database::dao::info_directory::InfoDirectoryDao;
-use crate::mod_database::dao::view_chunk::ViewChunkDao;
-use crate::mod_database::dao::view_file::ViewFileDao;
-use crate::mod_database::database::Database;
+use crate::mod_database::dao_database::dao_info_directory::InfoDirectoryDao;
+use crate::mod_database::dao_database::dao_view_chunk::ViewChunkDao;
+use crate::mod_database::dao_database::dao_view_file::ViewFileDao;
+use crate::mod_database::impl_database::Database;
 
 use crate::mod_extract::model_extract::{ExtractProgress, ExtractTask};
 use crate::mod_extract::trait_extract::ExtractOperations;

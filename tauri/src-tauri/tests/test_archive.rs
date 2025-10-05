@@ -9,11 +9,11 @@
 //! TODO 需要把 空目录校验等功能抽离出来，设计一个统一的 mod 或者功能，用于在各个任务执行之前进行环境校验
 
 use log::info;
-use one_archive_lib::mod_database::dao::archive_chunk::ArchiveChunkDao;
-use one_archive_lib::mod_database::dao::info_directory::InfoDirectoryDao;
-use one_archive_lib::mod_database::dao::info_file::InfoFileDao;
-use one_archive_lib::mod_database::dao::info_root::InfoRootDao;
-use one_archive_lib::mod_database::dao::map_file_chunk::MapFileChunkDao;
+use one_archive_lib::mod_database::dao_database::dao_archive_chunk::ArchiveChunkDao;
+use one_archive_lib::mod_database::dao_database::dao_info_directory::InfoDirectoryDao;
+use one_archive_lib::mod_database::dao_database::dao_info_file::InfoFileDao;
+use one_archive_lib::mod_database::dao_database::dao_info_root::InfoRootDao;
+use one_archive_lib::mod_database::dao_database::dao_map_file_chunk::MapFileChunkDao;
 use one_archive_lib::mod_scan::impl_scan::ScanServices;
 use one_archive_lib::mod_scan::trait_scan::DirectoryScanOperations;
 use std::fs;
@@ -26,7 +26,7 @@ use one_archive_lib::mod_archive::trait_archive::ArchiveOperations;
 use one_archive_lib::mod_database::constants::{
     ChunkStatus, DirectoryStatus, FileStatus, MapFileChunkStatus, RootStatus,
 };
-use one_archive_lib::mod_database::database::Database;
+use one_archive_lib::mod_database::impl_database::Database;
 
 // 常量定义
 const LARGE_FILE_SIZE: i64 = 2 * 1024 * 1024; // 2MB
@@ -119,7 +119,7 @@ fn perform_archiving(env: &TestEnvironment) -> Result<(), Box<dyn std::error::Er
         env.archive_dir.to_string_lossy().to_string(),
         CHUNK_SIZE,
     );
-    let archive_service = ArchiveServices::default();
+    let archive_service = ArchiveServices;
     archive_service.archive(env.source_dir.to_str().unwrap(), &mut context, None::<fn(_)>)?;
     Ok(())
 }

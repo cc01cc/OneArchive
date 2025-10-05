@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import Tree from 'primevue/tree'
@@ -8,6 +7,7 @@ import Card from 'primevue/card'
 import Button from 'primevue/button'
 import { useGlobalStore } from '../store/global'
 import { open } from '@tauri-apps/plugin-dialog'
+import { getAllRoots, getChildDirectories, getDirectoriesByRootId, getDirectoryById, getFilesByDirectoryId } from '../api'
 import type { TreeNode } from 'primevue/treenode'
 
 // 定义文件/目录节点类型
@@ -56,15 +56,20 @@ const loadRoots = async () => {
     error.value = ""
 
     try {
-        const result = await invoke("get_all_roots", {
-            dbPath: globalStore.dbPath
-        })
+        const result = await getAllRoots(globalStore.dbPath)
+        if (result.success && result.data) {
+            roots.value = result.data.map(root => ({
+                id: root.id,
+                root_name: root.rootName,
+                root_path: root.rootPath
+            }))
 
-        roots.value = result as Array<{ id: number, root_name: string, root_path: string }>
-
-        // 如果有根目录，默认选择第一个
-        if (roots.value.length > 0 && !selectedRoot.value) {
-            selectedRoot.value = roots.value[0]
+            // 如果有根目录，默认选择第一个
+            if (roots.value.length > 0 && !selectedRoot.value) {
+                selectedRoot.value = roots.value[0]
+            }
+        } else {
+            throw new Error(result.error || '获取根目录失败')
         }
     } catch (err: any) {
         error.value = `加载根目录失败：${err}`
@@ -88,21 +93,32 @@ const loadFileTree = async (rootId: number) => {
     loadingTree.value = true
     try {
         // 获取根目录下的直接子目录
-        const rootDirs = await invoke("get_child_directories", {
-            dbPath: globalStore.dbPath,
-            rootId: rootId,
-            parentPath: ""
-        }) as Array<{ id: number, directory_name: string, directory_path: string | null }>
+        const rootDirsResult = await getChildDirectories(globalStore.dbPath, rootId, "")
+        if (!rootDirsResult.success || !rootDirsResult.data) {
+            throw new Error(rootDirsResult.error || '获取子目录失败')
+        }
+        const rootDirs = rootDirsResult.data.map(dir => ({
+            id: dir.id,
+            directory_name: dir.directoryName,
+            directory_path: dir.directoryPath
+        }))
 
         console.log("Root directories:", rootDirs);
+
         // 根据路径为空来获取根目录的目录 ID
         let rootDirectoryId = 0;
         try {
             // 获取根目录信息，查找路径为空的目录记录
-            const rootDirInfo = await invoke("get_directories_by_root_id", {
-                dbPath: globalStore.dbPath,
-                rootId: rootId
-            }) as Array<{ id: number, root_id: number, directory_name: string, directory_path: string | null }>
+            const rootDirInfoResult = await getDirectoriesByRootId(globalStore.dbPath, rootId)
+            if (!rootDirInfoResult.success || !rootDirInfoResult.data) {
+                throw new Error(rootDirInfoResult.error || '获取目录信息失败')
+            }
+            const rootDirInfo = rootDirInfoResult.data.map(dir => ({
+                id: dir.id,
+                root_id: rootId,
+                directory_name: dir.directoryName,
+                directory_path: dir.directoryPath
+            }))
 
             // 查找路径为空的根目录记录
             const rootDir = rootDirInfo.find(dir =>
@@ -119,10 +135,15 @@ const loadFileTree = async (rootId: number) => {
         }
 
         // 获取根目录下的文件 (使用根目录的目录 ID)
-        const rootFiles = await invoke("get_files_by_directory_id", {
-            dbPath: globalStore.dbPath,
-            directoryId: rootDirectoryId
-        }) as Array<{ id: number, file_name: string, directory_id: number }>
+        const rootFilesResult = await getFilesByDirectoryId(globalStore.dbPath, rootDirectoryId)
+        if (!rootFilesResult.success || !rootFilesResult.data) {
+            throw new Error(rootFilesResult.error || '获取文件列表失败')
+        }
+        const rootFiles = rootFilesResult.data.map(file => ({
+            id: file.id,
+            file_name: file.fileName,
+            directory_id: file.directoryId
+        }))
 
         console.log("Root directory files:", rootFiles);
         // 构建根节点树结构
@@ -207,24 +228,38 @@ const onNodeExpand = async (node: TreeNode) => {
 
     try {
         // 获取目录信息以获取路径
-        const dirInfo = await invoke("get_directory_by_id", {
-            dbPath: globalStore.dbPath,
-            directoryId: dirId
-        }) as { id: number, directory_name: string, directory_path: string | null }
+        const dirInfoResult = await getDirectoryById(globalStore.dbPath, dirId)
+        if (!dirInfoResult.success || !dirInfoResult.data) {
+            throw new Error(dirInfoResult.error || '获取目录信息失败')
+        }
+        const dirInfo = {
+            id: dirInfoResult.data.id,
+            directory_name: dirInfoResult.data.directoryName,
+            directory_path: dirInfoResult.data.directoryPath
+        }
 
         // 获取该目录的直接子目录
-        const childDirs = await invoke("get_child_directories", {
-            dbPath: globalStore.dbPath,
-            rootId: selectedRoot.value.id,
-            parentPath: dirInfo.directory_path || ''
-        }) as Array<{ id: number, directory_name: string, directory_path: string | null }>
+        const childDirsResult = await getChildDirectories(globalStore.dbPath, selectedRoot.value.id, dirInfo.directory_path || '')
+        if (!childDirsResult.success || !childDirsResult.data) {
+            throw new Error(childDirsResult.error || '获取子目录失败')
+        }
+        const childDirs = childDirsResult.data.map(dir => ({
+            id: dir.id,
+            directory_name: dir.directoryName,
+            directory_path: dir.directoryPath
+        }))
         console.log("Directory children:", childDirs)
 
         // 获取该目录下的文件
-        const dirFiles = await invoke("get_files_by_directory_id", {
-            dbPath: globalStore.dbPath,
-            directoryId: dirId
-        }) as Array<{ id: number, file_name: string, directory_id: number }>
+        const dirFilesResult = await getFilesByDirectoryId(globalStore.dbPath, dirId)
+        if (!dirFilesResult.success || !dirFilesResult.data) {
+            throw new Error(dirFilesResult.error || '获取文件列表失败')
+        }
+        const dirFiles = dirFilesResult.data.map(file => ({
+            id: file.id,
+            file_name: file.fileName,
+            directory_id: file.directoryId
+        }))
         console.log("Directory files:", dirFiles)
 
         // 构建子节点

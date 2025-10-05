@@ -4,19 +4,13 @@
 use anyhow::Result as AnyResult;
 use std::fmt;
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tar::Builder;
 
 use crate::mod_archive::utils_archive::ArchiveProgress;
-use crate::mod_database::database::Database;
-use crate::mod_database::trait_database::{
-    ArchiveChunkOperations, DirectoryOperations, FileOperations, MapFileChunkOperations,
-    RootOperations, StatusOperations, ViewOperations,
-};
-use crate::utils::{EventType, ProgressEvent};
-
-
+use crate::mod_database::impl_database::Database;
+use crate::utils::ProgressEvent;
 
 /// 归档上下文，用于管理当前归档过程中的状态
 pub struct ArchiveContext {
@@ -80,7 +74,6 @@ impl ArchiveContext {
 
 /// 归档操作 trait
 pub trait ArchiveOperations {
-
     /// 将指定根目录下的所有文件添加到归档中
     /// 对应 Java 中 ArchiveIn.java 的 archiveFileInDb 方法
     ///

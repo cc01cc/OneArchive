@@ -8,9 +8,7 @@ use std::convert::TryFrom;
 pub trait DatabaseCommonOperations {
     /// 通用查询单个记录的方法
     fn query_single<T>(
-        &self,
-        sql: &str,
-        params: &[&dyn rusqlite::ToSql],
+        &self, sql: &str, params: &[&dyn rusqlite::ToSql],
     ) -> SqliteResult<Option<T>>
     where
         T: for<'r> TryFrom<&'r Row<'r>, Error = SqliteError>;
@@ -25,9 +23,7 @@ pub trait DatabaseCommonOperations {
 
     /// 通用插入并返回 ID 的方法 (支持命名参数)
     fn insert_and_get_id_named(
-        &self,
-        sql: &str,
-        params: &[(&str, &dyn rusqlite::ToSql)],
+        &self, sql: &str, params: &[(&str, &dyn rusqlite::ToSql)],
     ) -> SqliteResult<i64>;
 }
 
@@ -37,17 +33,7 @@ impl DatabaseCommonOperations for Connection {
     where
         T: for<'r> TryFrom<&'r Row<'r>, Error = SqliteError>,
     {
-        let mut stmt = self.prepare(sql)?;
-        let mut rows = stmt.query(params)?;
-
-        if let Some(row) = rows.next()? {
-            match T::try_from(row) {
-                Ok(entity) => Ok(Some(entity)),
-                Err(e) => Err(e),
-            }
-        } else {
-            Ok(None)
-        }
+        self.prepare(sql)?.query_map(params, |row| T::try_from(row))?.next().transpose()
     }
 
     /// 通用查询多个记录的方法
@@ -55,33 +41,30 @@ impl DatabaseCommonOperations for Connection {
     where
         T: for<'r> TryFrom<&'r Row<'r>, Error = SqliteError>,
     {
-        let mut stmt = self.prepare(sql)?;
-        let mut rows = stmt.query(params)?;
-        let mut results = Vec::new();
-
-        while let Some(row) = rows.next()? {
-            match T::try_from(row) {
-                Ok(entity) => results.push(entity),
-                Err(e) => return Err(e),
-            }
-        }
-
-        Ok(results)
+        self.prepare(sql)?.query_map(params, |row| T::try_from(row))?.collect()
     }
 
     /// 通用插入并返回 ID 的方法
     fn insert_and_get_id(&self, sql: &str, params: &[&dyn rusqlite::ToSql]) -> SqliteResult<i64> {
-        self.execute(sql, params)?;
-        Ok(self.last_insert_rowid())
+        let mut stmt = self.prepare(sql)?;
+        let mut rows = stmt.query(params)?;
+        if let Some(row) = rows.next()? {
+            row.get(0)
+        } else {
+            Ok(self.last_insert_rowid())
+        }
     }
 
     /// 通用插入并返回 ID 的方法 (支持命名参数)
     fn insert_and_get_id_named(
-        &self,
-        sql: &str,
-        params: &[(&str, &dyn rusqlite::ToSql)],
+        &self, sql: &str, params: &[(&str, &dyn rusqlite::ToSql)],
     ) -> SqliteResult<i64> {
-        self.execute(sql, params)?;
-        Ok(self.last_insert_rowid())
+        let mut stmt = self.prepare(sql)?;
+        let mut rows = stmt.query(params)?;
+        if let Some(row) = rows.next()? {
+            row.get(0)
+        } else {
+            Ok(self.last_insert_rowid())
+        }
     }
 }

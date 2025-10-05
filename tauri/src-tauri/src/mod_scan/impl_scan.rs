@@ -12,10 +12,10 @@ use walkdir::WalkDir;
 
 use crate::mod_database::constants::{DirectoryStatus, FileStatus, RootStatus};
 
-use crate::mod_database::dao::info_directory::InfoDirectoryDao;
-use crate::mod_database::dao::info_file::InfoFileDao;
-use crate::mod_database::dao::info_root::InfoRootDao;
-use crate::mod_database::database::Database;
+use crate::mod_database::dao_database::dao_info_directory::InfoDirectoryDao;
+use crate::mod_database::dao_database::dao_info_file::InfoFileDao;
+use crate::mod_database::dao_database::dao_info_root::InfoRootDao;
+use crate::mod_database::impl_database::Database;
 use crate::mod_database::schema::{InfoDirectory, InfoFile, InfoRoot};
 use crate::mod_scan::model_scan::{DirectoryStatistics, ScanProgress};
 use crate::mod_scan::trait_scan::{DirectoryScanOperations, DirectoryStatisticsOperations};

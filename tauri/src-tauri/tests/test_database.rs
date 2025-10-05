@@ -1,5 +1,5 @@
-use one_archive_lib::mod_database::dao::info_root::InfoRootDao;
-use one_archive_lib::mod_database::database::Database;
+use one_archive_lib::mod_database::dao_database::dao_info_root::InfoRootDao;
+use one_archive_lib::mod_database::impl_database::Database;
 use one_archive_lib::mod_database::trait_database::InitializationOperations;
 use tempfile::TempDir;
 
@@ -42,7 +42,7 @@ fn test_database_operations() -> Result<(), Box<dyn std::error::Error>> {
     println!("Find by long path prefix: {:?}", result2.is_some());
 
     // 显示数据库中的所有根目录记录
-    let all_roots = info_root_dao.find_all_root_info()?;
+    let all_roots = info_root_dao.find_all()?;
     println!("All roots in database:");
     for root in all_roots {
         println!("  ID: {:?}, Path: {}", root.id, root.root_path);
@@ -79,7 +79,7 @@ fn test_special_path_cases() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // 测试查找所有根目录
-    let all_roots = info_root_dao.find_all_root_info()?;
+    let all_roots = info_root_dao.find_all()?;
     assert_eq!(all_roots.len(), 4);
 
     Ok(())

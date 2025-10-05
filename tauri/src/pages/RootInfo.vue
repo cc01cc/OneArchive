@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import Card from "primevue/card";
 import Button from "primevue/button";
@@ -8,6 +7,7 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Message from "primevue/message";
 import { useGlobalStore } from '../store/global';
+import { getAllRoots } from '../api';
 
 const globalStore = useGlobalStore();
 
@@ -42,11 +42,12 @@ const loadRoots = async () => {
   error.value = "";
 
   try {
-    const result = await invoke("get_all_roots", {
-      dbPath: globalStore.dbPath
-    });
-
-    roots.value = result as any[];
+    const result = await getAllRoots(globalStore.dbPath);
+    if (result.success && result.data) {
+      roots.value = result.data as any[];
+    } else {
+      throw new Error(result.error || '获取根目录失败');
+    }
   } catch (err: any) {
     error.value = `加载根目录失败：${err}`;
     console.error("Load roots error:", err);

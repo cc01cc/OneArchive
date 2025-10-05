@@ -15,11 +15,11 @@ use one_archive_lib::mod_scan::trait_scan::{
 use std::fs;
 
 use one_archive_lib::mod_database::constants::{DirectoryStatus, FileStatus, RootStatus};
-use one_archive_lib::mod_database::dao::info_directory::InfoDirectoryDao;
-use one_archive_lib::mod_database::dao::info_file::InfoFileDao;
-use one_archive_lib::mod_database::dao::info_root::InfoRootDao;
-use one_archive_lib::mod_database::dao::view_file::ViewFileDao;
-use one_archive_lib::mod_database::database::Database;
+use one_archive_lib::mod_database::dao_database::dao_info_directory::InfoDirectoryDao;
+use one_archive_lib::mod_database::dao_database::dao_info_file::InfoFileDao;
+use one_archive_lib::mod_database::dao_database::dao_info_root::InfoRootDao;
+use one_archive_lib::mod_database::dao_database::dao_view_file::ViewFileDao;
+use one_archive_lib::mod_database::impl_database::Database;
 use one_archive_lib::mod_database::schema::InfoFile;
 
 mod common;
@@ -46,7 +46,7 @@ fn assert_scan_results(
     database: &Database, root_path: &std::path::Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root_dao = InfoRootDao::new(database.conn.clone());
-    let roots = root_dao.find_all_root_info()?;
+    let roots = root_dao.find_all()?;
     assert_eq!(roots.len(), 1, "应该只有一个根目录");
 
     let root = &roots[0];
@@ -229,7 +229,7 @@ fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn 
     assert!(result1.is_ok(), "首次扫描应该成功");
 
     let root_dao = InfoRootDao::new(env.database.conn.clone());
-    let roots = root_dao.find_all_root_info()?;
+    let roots = root_dao.find_all()?;
     let root_id = roots[0].id.unwrap();
 
     // 修改文件内容以测试文件更新
@@ -260,7 +260,7 @@ fn test_incremental_scan_and_save_directory_with_events() -> Result<(), Box<dyn 
     assert!(result2.is_ok(), "第二次扫描应该成功");
 
     // 验证根目录状态
-    let roots = root_dao.find_all_root_info()?;
+    let roots = root_dao.find_all()?;
     assert_eq!(roots.len(), 1, "应该只有一个根目录");
     assert_eq!(roots[0].status, RootStatus::WaitToArchive, "根目录状态应该是 WaitToArchive");
 
@@ -369,7 +369,7 @@ fn test_multiple_independent_roots() -> Result<(), Box<dyn std::error::Error>> {
 
     // 验证数据库中的记录
     let root_dao = InfoRootDao::new(env1.database.conn.clone());
-    let roots = root_dao.find_all_root_info()?;
+    let roots = root_dao.find_all()?;
     assert_eq!(roots.len(), 2, "应该有两个根目录");
 
     // 验证两个根目录状态都为 WaitToArchive
