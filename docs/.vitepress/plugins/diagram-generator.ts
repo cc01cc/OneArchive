@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { execSync } from 'child_process'
+import crypto from 'crypto'
 import type MarkdownIt from 'markdown-it'
 
 export default function diagramGenerator(md: MarkdownIt) {
@@ -12,7 +13,11 @@ export default function diagramGenerator(md: MarkdownIt) {
       const content = token.content
       const outDir = path.resolve(process.cwd(), 'public/diagrams')
       fs.mkdirSync(outDir, { recursive: true })
-      const fileBase = `${path.basename(env.filePath || 'unknown', '.md')}-${lang}-${Buffer.from(content).toString('base64url').slice(0, 10)}`
+      // 清理旧的缓存文件（可选，如果需要完全重新生成）
+      // fs.rmSync(outDir, { recursive: true, force: true })
+      // fs.mkdirSync(outDir, { recursive: true })
+      const contentHash = crypto.createHash('md5').update(content).digest('hex')
+      const fileBase = `${path.basename(env.filePath || 'unknown', '.md')}-${lang}-${contentHash}`
       const outPath = path.join(outDir, `${fileBase}.svg`)
       if (!fs.existsSync(outPath)) {
         console.log(`生成图表：${fileBase}`)
@@ -20,13 +25,51 @@ export default function diagramGenerator(md: MarkdownIt) {
           if (lang === 'plantuml') {
             const tmp = path.join(outDir, `${fileBase}.pu`)
             fs.writeFileSync(tmp, content)
-            execSync(`npx plantuml-cli -tsvg "${tmp}"`, { stdio: 'inherit' })
+            try {
+              execSync(`npx plantuml-cli "${tmp}" -tsvg -o "${outDir}"`, { stdio: 'inherit' })
+              // PlantUML 根据标题生成文件名，检查可能的输出文件
+              let actualOutPath = outPath
+              if (!fs.existsSync(outPath)) {
+                // 尝试查找根据标题命名的文件
+                const titleMatch = content.match(/@startuml\s+(.+)/)
+                if (titleMatch) {
+                  const title = titleMatch[1].trim()
+                  const titlePath = path.join(outDir, `${title}.svg`)
+                  if (fs.existsSync(titlePath)) {
+                    actualOutPath = titlePath
+                  }
+                }
+                // 如果还没找到，查找最新生成的 SVG 文件
+                if (!fs.existsSync(actualOutPath)) {
+                  const files = fs.readdirSync(outDir)
+                    .filter(f => f.endsWith('.svg'))
+                    .map(f => ({ name: f, mtime: fs.statSync(path.join(outDir, f)).mtime }))
+                    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime())
+                  if (files.length > 0) {
+                    actualOutPath = path.join(outDir, files[0].name)
+                  }
+                }
+              }
+              // 如果找到了文件，重命名到期望的位置
+              if (fs.existsSync(actualOutPath) && actualOutPath !== outPath) {
+                fs.renameSync(actualOutPath, outPath)
+              }
+            } catch (error) {
+              console.error(`PlantUML 命令执行失败: ${error}`)
+            }
             fs.unlinkSync(tmp)
           } else {
             const tmp = path.join(outDir, `${fileBase}.mmd`)
             fs.writeFileSync(tmp, content)
-            execSync(`npx mmdc -i "${tmp}" -o "${outPath}" --puppeteerConfig '{"args": ["--no-sandbox"]}'`, { stdio: 'inherit' })
+            // 创建临时 Puppeteer 配置文件
+            const puppeteerConfig = {
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
+            }
+            const configFile = path.join(outDir, `${fileBase}-config.json`)
+            fs.writeFileSync(configFile, JSON.stringify(puppeteerConfig))
+            execSync(`npx mmdc -i "${tmp}" -o "${outPath}" -p "${configFile}"`, { stdio: 'inherit' })
             fs.unlinkSync(tmp)
+            fs.unlinkSync(configFile)
           }
         } catch (error) {
           console.error(`生成图表失败 ${fileBase}:`, error)
