@@ -45,7 +45,10 @@ jobs:
       - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
       - name: Install Chrome for Puppeteer
-        run: npx puppeteer browsers install chrome-headless-shell
+        run: |
+          npx puppeteer browsers install chrome-headless-shell
+          export PUPPETEER_CACHE_DIR=/home/runner/.cache/puppeteer
+          echo "PUPPETEER_CACHE_DIR=/home/runner/.cache/puppeteer" >> $GITHUB_ENV
       - name: Install dependencies
         run: pnpm install # 或 pnpm install / yarn install / bun install
       - name: Build with VitePress

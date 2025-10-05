@@ -26,7 +26,7 @@ export default function diagramGenerator(md: MarkdownIt) {
             const tmp = path.join(outDir, `${fileBase}.pu`)
             fs.writeFileSync(tmp, content)
             try {
-              execSync(`npx plantuml-cli "${tmp}" -tsvg -o "${outDir}" -DPLANTUML_LIMIT_SIZE=16384 -DdefaultFontSize=14 -DdefaultFontName="DejaVu Sans, WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif" -DminimumWidth=200 -Ddpi=150`, { stdio: 'inherit' })
+              execSync(`npx plantuml-cli "${tmp}" -tsvg -o "${outDir}" -DPLANTUML_LIMIT_SIZE=16384 -DdefaultFontSize=14 -DdefaultFontName="DejaVu Sans, WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif" -DminimumWidth=200 -Ddpi=150 -Dnodesep=20 -Dranksep=40 -Dpadding=10`, { stdio: 'inherit' })
               // PlantUML 根据标题生成文件名，检查可能的输出文件
               let actualOutPath = outPath
               if (!fs.existsSync(outPath)) {
