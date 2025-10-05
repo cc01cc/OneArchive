@@ -15,7 +15,8 @@ OneArchive 是一个文件归档系统，旨在帮助用户高效地管理和备
 ```bash
 # 克隆仓库
 git clone https://github.com/cc01cc/OneArchive.git
-cd OneArchive
+
+cd OneArchive/tauri
 
 # 安装依赖
 pnpm install
@@ -51,12 +52,12 @@ pnpm run tauri dev
 start
 
 :初始化归档上下文 (ArchiveContext);
-:扫描目录获取文件列表 (DirectoryScanner);
+:扫描目录获取文件列表 (DirectoryScanOperations.scan_and_save_directory_with_events);
 
 fork
   :获取文件元信息 (大小、修改时间);
 fork again
-  :计算文件哈希 (DigestUtils.sha256Hex);
+  :计算文件哈希 (calculate_file_hash);
 end fork
 
 if (文件大小 > 归档限制) then (是)
@@ -70,12 +71,12 @@ if (存在相同哈希数据块？) then (是)
   :关联已有数据块 ID 到文件索引;
 else (否)
   :创建新数据块记录 (archive_chunk 表);
-  :写入文件数据到 Tar 归档 (TarArchiveOutputStream);
+  :写入文件数据到 Tar 归档 (tar::Builder<File>);
   :更新归档大小和状态;
 endif
 
 :更新文件索引状态 (file_index 表);
-:提交事务 (DatabaseAccessor);
+:提交事务;
 
 stop
 @enduml
@@ -85,7 +86,7 @@ stop
 
 ```plantuml
 @startuml
-title scanAndSaveDirectory 流程图
+title scan_and_save_directory_with_events 流程图
 
 start
 
@@ -115,9 +116,9 @@ endif
 partition "目录遍历阶段" {
     :开始遍历目录树;
 
-    note right: 使用 Files.walkFileTree 方法
+    note right: 使用 WalkDir 方法
 
-    :访问目录 (preVisitDirectory);
+    :访问目录;
 
     partition "处理目录" {
         :计算相对路径;
@@ -133,7 +134,7 @@ partition "目录遍历阶段" {
         endif
     }
 
-    :访问文件 (visitFile);
+    :访问文件;
 
     partition "处理文件" {
         :计算文件相对路径;
@@ -147,7 +148,7 @@ partition "目录遍历阶段" {
             :恢复文件状态;
             :更新数据库中的文件信息;
         else (否)
-            :设置文件状态为 UNARCHIVED;
+            :设置文件状态为 WaitToArchive;
             :插入新文件到数据库;
         endif
 
@@ -168,6 +169,60 @@ endif
 
 stop
 @enduml
+```
+
+## 项目结构
+
+```txt
+OneArchive/
+├── tauri/                  # Tauri 应用主目录
+│   ├── src/                # 前端源码 (Vue 3 + TypeScript)
+│   │   ├── api/            # Tauri 命令调用封装
+│   │   ├── components/     # Vue 组件
+│   │   │   ├── recovery/   # 灾备相关组件
+│   │   ├── composables/    # Vue 组合式函数
+│   │   ├── layouts/        # 页面布局
+│   │   ├── pages/          # 页面组件
+│   │   │   ├── task-center/# 任务中心页面
+│   │   ├── router/         # 路由配置
+│   │   ├── store/          # Pinia 状态管理
+│   │   ├── types/          # TypeScript 类型定义
+│   │   └── assets/         # 静态资源
+│   └── src-tauri/          # Rust 后端源码
+│       ├── src/
+│       │   ├── mod_archive/      # 归档模块
+│       │   │   ├── trait_archive.rs    # 归档 trait 定义
+│       │   │   ├── impl_archive.rs     # 归档具体实现
+│       │   │   ├── utils_archive.rs    # 归档工具函数
+│       │   ├── mod_database/     # 数据库模块
+│       │   │   ├── trait_database.rs   # 数据库 trait
+│       │   │   ├── impl_database.rs    # 数据库实现
+│       │   │   ├── schema.rs           # 数据模型
+│       │   │   ├── constants.rs        # 数据库常量
+│       │   │   ├── dao_database/       # DAO 层
+│       │   ├── mod_scan/         # 扫描模块
+│       │   │   ├── trait_scan.rs       # 扫描 trait
+│       │   │   ├── impl_scan.rs        # 扫描实现
+│       │   │   ├── model_scan.rs       # 扫描模型
+│       │   ├── mod_extract/      # 解压模块
+│       │   ├── mod_disaster_recovery/  # 灾备模块
+│       │   ├── api.rs            # Tauri API 接口
+│       │   ├── main.rs           # 程序入口
+│       │   ├── lib.rs            # 库入口
+│       │   └── utils.rs          # 工具函数
+│       ├── Cargo.toml         # Rust 依赖配置
+│       ├── tauri.conf.json    # Tauri 配置
+│       └── icons/             # 应用图标
+├── docs/                   # 项目文档
+│   ├── .vitepress/         # VitePress 配置
+│   ├── guide/              # 指南文档
+│   └── public/             # 文档静态资源
+├── assets/                 # 项目资源
+├── package.json            # Node.js 依赖配置
+├── pnpm-lock.yaml          # pnpm 锁文件
+├── README.md               # 项目说明
+├── LICENSE                 # 许可证
+└── .gitignore              # Git 忽略文件
 ```
 
 ## 开发计划
