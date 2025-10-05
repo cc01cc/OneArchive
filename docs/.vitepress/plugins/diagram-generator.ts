@@ -25,7 +25,7 @@ export default function diagramGenerator(md: MarkdownIt) {
           } else {
             const tmp = path.join(outDir, `${fileBase}.mmd`)
             fs.writeFileSync(tmp, content)
-            execSync(`npx mmdc -i "${tmp}" -o "${outPath}" --no-sandbox`, { stdio: 'inherit' })
+            execSync(`npx mmdc -i "${tmp}" -o "${outPath}" --puppeteerConfig '{"args": ["--no-sandbox"]}'`, { stdio: 'inherit' })
             fs.unlinkSync(tmp)
           }
         } catch (error) {
