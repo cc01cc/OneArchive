@@ -26,7 +26,7 @@ export default function diagramGenerator(md: MarkdownIt) {
             const tmp = path.join(outDir, `${fileBase}.pu`)
             fs.writeFileSync(tmp, content)
             try {
-              execSync(`npx plantuml-cli "${tmp}" -tsvg -o "${outDir}"`, { stdio: 'inherit' })
+              execSync(`npx plantuml-cli "${tmp}" -tsvg -o "${outDir}" -DPLANTUML_LIMIT_SIZE=16384`, { stdio: 'inherit' })
               // PlantUML 根据标题生成文件名，检查可能的输出文件
               let actualOutPath = outPath
               if (!fs.existsSync(outPath)) {
