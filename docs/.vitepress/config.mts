@@ -2,7 +2,7 @@
 import { defineConfig } from 'vitepress'
 import diagramGenerator from './plugins/diagram-generator'
 export default defineConfig({
-  base: '/OneArchive/',
+  base: '/',
   title: "OneArchive",
   description: "文件归档分卷工具，支持智能去重、分卷存储和 Reed-Solomon 纠删码数据保护等",
   rewrites: {
