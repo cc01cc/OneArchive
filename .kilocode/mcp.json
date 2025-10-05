@@ -7,7 +7,10 @@
         "@modelcontextprotocol/server-filesystem",
         "C:\\zeogit\\OneArchive"
       ],
-      "alwaysAllow": []
+      "alwaysAllow": [
+        "list_directory",
+        "read_text_file"
+      ]
     },
     "sequentialthinking": {
       "command": "npx",

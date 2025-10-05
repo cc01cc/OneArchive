@@ -72,7 +72,7 @@ start
 partition "初始化阶段" {
     :获取根目录绝对路径;
     :查询数据库中是否存在该根目录;
-    
+
     if ("根目录不存在?") then (是)
         :创建新的根目录;
         :获取新根目录ID;
@@ -96,14 +96,14 @@ partition "目录遍历阶段" {
     :开始遍历目录树;
 
     note right: 使用 Files.walkFileTree 方法
-    
+
     :访问目录 (preVisitDirectory);
-    
+
     partition "处理目录" {
         :计算相对路径;
         :创建 InfoDirectory 对象;
         :设置目录属性 (rootId, name, path, mtime, status);
-        
+
         if ("是否存在相同目录?") then (是)
             :使用现有目录ID;
             :恢复目录状态;
@@ -112,16 +112,16 @@ partition "目录遍历阶段" {
             :插入新目录到数据库;
         endif
     }
-    
+
     :访问文件 (visitFile);
-    
+
     partition "处理文件" {
         :计算文件相对路径;
         :获取父目录ID;
         :计算文件哈希值;
         :创建 InfoFile 对象;
         :设置文件属性 (name, size, mtime, directoryId, hash);
-        
+
         if ("是否存在相同文件?") then (是)
             :使用现有文件ID;
             :恢复文件状态;
@@ -130,15 +130,15 @@ partition "目录遍历阶段" {
             :设置文件状态为 UNARCHIVED;
             :插入新文件到数据库;
         endif
-        
+
         :更新已处理大小;
-        
+
         if ("是否提供回调函数且总大小>0?") then (是)
             :计算进度百分比;
             :调用回调函数更新进度;
         endif
     }
-    
+
     :结束目录遍历;
 }
 

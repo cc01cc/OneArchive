@@ -1,5 +1,6 @@
 // docs/.vitepress/config.mts
 import { defineConfig } from 'vitepress'
+import diagramGenerator from './plugins/diagram-generator'
 export default defineConfig({
   base: '/OneArchive/',
   title: "OneArchive",
@@ -19,6 +20,11 @@ export default defineConfig({
     '03-详细设计-04-灾备方案设计.md': 'design/disaster-recovery.md',
     '04-测试文档.md': 'testing.md',
     'guide/getting-started.md': 'guide/getting-started.md'
+  },
+  markdown: {
+    config: (md) => {
+      md.use(diagramGenerator)
+    }
   },
   themeConfig: {
     nav: [
