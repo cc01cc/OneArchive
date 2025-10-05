@@ -20,8 +20,14 @@ showFooter.value = true
 
 <template>
     <Layout>
-        <template #layout-bottom>
-            <div v-if="showFooter" class="footer">
+        <template v-if="isHome" #home-features-after>
+            <div class="footer">
+                <p>基于 Apache 2.0 协议发布</p>
+                <p>版权所有 &copy; {{ new Date().getFullYear() }} 郑一弘 (cc01cc)</p>
+            </div>
+        </template>
+        <template v-else #doc-after>
+            <div class="footer">
                 <p>基于 Apache 2.0 协议发布</p>
                 <p>版权所有 &copy; {{ new Date().getFullYear() }} 郑一弘 (cc01cc)</p>
             </div>
@@ -30,17 +36,6 @@ showFooter.value = true
 </template>
 
 <style>
-/* 覆盖默认的 layout-bottom 固定定位 */
-.VPLayout [data-vp-layout-bottom] {
-    position: static !important;
-    bottom: auto !important;
-    left: auto !important;
-    width: 100% !important;
-    z-index: auto !important;
-    background-color: transparent !important;
-    border-top: none !important;
-}
-
 .footer {
     width: 100%;
     text-align: center;
