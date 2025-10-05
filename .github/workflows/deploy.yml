@@ -53,7 +53,9 @@ jobs:
           npx puppeteer browsers install chrome
           export PUPPETEER_CACHE_DIR=/home/runner/.cache/puppeteer
           echo "PUPPETEER_CACHE_DIR=/home/runner/.cache/puppeteer" >> $GITHUB_ENV
-          echo "CHROME_EXECUTABLE_PATH=$(find /home/runner/.cache/puppeteer -name chrome | head -n 1)" >> $GITHUB_ENV
+          CHROME_PATH=$(find /home/runner/.cache/puppeteer -name chrome -type f -executable | head -n 1)
+          echo "CHROME_EXECUTABLE_PATH=$CHROME_PATH" >> $GITHUB_ENV
+          echo "Found Chrome at: $CHROME_PATH"
       - name: Install dependencies
         run: pnpm install # 或 pnpm install / yarn install / bun install
       - name: Build with VitePress
